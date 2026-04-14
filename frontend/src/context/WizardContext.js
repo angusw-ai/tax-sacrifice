@@ -6,12 +6,17 @@ const initialState = {
   currentStep: 1,
   taxYear: '2025/26',
   displayMode: 'annual',
+  employerNIPassback: false,
   step1: {
     grossSalary: '',
     taxRegion: 'england',
     studentLoan: 'none',
     employerPensionPct: '',
     age: '',
+    hasChildren: false,
+    numberOfChildren: 1,
+    childAges: '3',
+    monthlyCostPerChild: 800,
   },
   step2: {
     pension: { enabled: false, inputType: 'percentage', value: 5, method: 'netpay' },
@@ -20,6 +25,10 @@ const initialState = {
     childcare: { enabled: false, monthlyAmount: 243 },
     tech: { enabled: false, value: 1000 },
     healthcare: { enabled: false, monthlyPremium: 50 },
+  },
+  bonus: {
+    amount: '',
+    sacrificePct: 100,
   },
   step3: {
     monthlySaving: 500,
@@ -31,7 +40,12 @@ const initialState = {
     vehicles: { pension: true, stocksISA: true, cashISA: false, lisa: false },
     splits: { pension: 50, stocksISA: 50, cashISA: 0, lisa: 0 },
     viewMode: 'simple',
+    carryForward: false,
+    cfYear1: 0,
+    cfYear2: 0,
+    cfYear3: 0,
   },
+  mortgagePlanning: false,
 };
 
 function wizardReducer(state, action) {
@@ -42,8 +56,14 @@ function wizardReducer(state, action) {
       return { ...state, taxYear: action.payload };
     case 'SET_DISPLAY_MODE':
       return { ...state, displayMode: action.payload };
+    case 'SET_EMPLOYER_NI_PASSBACK':
+      return { ...state, employerNIPassback: action.payload };
+    case 'SET_MORTGAGE_PLANNING':
+      return { ...state, mortgagePlanning: action.payload };
     case 'UPDATE_STEP1':
       return { ...state, step1: { ...state.step1, ...action.payload } };
+    case 'UPDATE_BONUS':
+      return { ...state, bonus: { ...state.bonus, ...action.payload } };
     case 'UPDATE_STEP2_SCHEME':
       return {
         ...state,

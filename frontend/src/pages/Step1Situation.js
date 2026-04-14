@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, TrendingUp } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowRight, TrendingUp, Baby } from 'lucide-react';
 import { calculateIncomeTax, calculateEmployeeNI, calculateStudentLoan, getMarginalTaxRate } from '@/lib/taxEngine';
 import { formatCurrency, parseSalaryInput, formatSalaryInput, dv, dvLabel } from '@/lib/formatters';
 
@@ -149,6 +150,72 @@ export default function Step1Situation() {
             </div>
           </div>
         </CardContent>
+      </Card>
+
+      {/* Children & Childcare Section */}
+      <Card className="rounded-sm border shadow-sm">
+        <div className="flex items-center justify-between p-6 sm:p-8">
+          <div className="flex items-center gap-3">
+            <Baby className="w-5 h-5 text-muted-foreground" />
+            <div>
+              <h3 className="font-medium">Children & Childcare</h3>
+              <p className="text-xs text-muted-foreground">For Tax-Free Childcare and 30 Free Hours modelling</p>
+            </div>
+          </div>
+          <Switch
+            data-testid="toggle-has-children"
+            checked={step1.hasChildren}
+            onCheckedChange={(v) => update('hasChildren', v)}
+          />
+        </div>
+        {step1.hasChildren && (
+          <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-0 border-t border-border">
+            <div className="pt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground">
+                  Number of Children (under 12)
+                </Label>
+                <Input
+                  data-testid="input-num-children"
+                  className="font-mono rounded-sm h-11"
+                  type="number"
+                  min={1}
+                  max={6}
+                  value={step1.numberOfChildren}
+                  onChange={(e) => update('numberOfChildren', parseInt(e.target.value) || 1)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground">
+                  Ages (comma-separated)
+                </Label>
+                <Input
+                  data-testid="input-child-ages"
+                  className="font-mono rounded-sm h-11"
+                  placeholder="3, 5"
+                  value={step1.childAges}
+                  onChange={(e) => update('childAges', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground">
+                  Monthly Childcare Cost/Child
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">£</span>
+                  <Input
+                    data-testid="input-childcare-cost"
+                    className="pl-7 font-mono rounded-sm h-11"
+                    type="number"
+                    min={0}
+                    value={step1.monthlyCostPerChild}
+                    onChange={(e) => update('monthlyCostPerChild', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Tax Summary Preview */}

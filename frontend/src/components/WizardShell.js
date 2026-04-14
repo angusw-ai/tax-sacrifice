@@ -2,16 +2,19 @@ import { useWizard } from '@/context/WizardContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { AVAILABLE_TAX_YEARS } from '@/lib/taxEngine';
+import AdjustedNetIncomeBanner from '@/components/AdjustedNetIncomeBanner';
 import Step1Situation from '@/pages/Step1Situation';
 import Step2Sacrifice from '@/pages/Step2Sacrifice';
+import StepBonusSacrifice from '@/pages/StepBonusSacrifice';
 import Step3Comparison from '@/pages/Step3Comparison';
 import Step4Results from '@/pages/Step4Results';
 
 const STEPS = [
   { num: 1, label: 'Your Situation' },
   { num: 2, label: 'Salary Sacrifice' },
-  { num: 3, label: 'Pension vs ISA' },
-  { num: 4, label: 'Results' },
+  { num: 3, label: 'Bonus' },
+  { num: 4, label: 'Pension vs ISA' },
+  { num: 5, label: 'Results' },
 ];
 
 export default function WizardShell() {
@@ -113,13 +116,17 @@ export default function WizardShell() {
         </div>
       </nav>
 
+      {/* Adjusted Net Income Banner */}
+      <AdjustedNetIncomeBanner />
+
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div key={state.currentStep} className="wizard-step">
           {state.currentStep === 1 && <Step1Situation />}
           {state.currentStep === 2 && <Step2Sacrifice />}
-          {state.currentStep === 3 && <Step3Comparison />}
-          {state.currentStep === 4 && <Step4Results />}
+          {state.currentStep === 3 && <StepBonusSacrifice />}
+          {state.currentStep === 4 && <Step3Comparison />}
+          {state.currentStep === 5 && <Step4Results />}
         </div>
       </main>
 

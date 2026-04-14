@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, ArrowRight, TrendingUp, Shield, Banknote, Gift, Layers } from 'lucide-react';
+import { ArrowLeft, ArrowRight, TrendingUp, Shield, Banknote, Gift, Layers, Clock } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getMarginalTaxRate, getMarginalNIRate, TAX_CONSTANTS } from '@/lib/taxEngine';
+import { getMarginalTaxRate, getMarginalNIRate, TAX_CONSTANTS, calculateCarryForward, calculate2029NImpact, calculateTotalSacrifice, getConstants } from '@/lib/taxEngine';
 import { projectPension, projectISA, projectLISA, estimatePensionDrawdown, getEffectivePensionCost } from '@/lib/projectionEngine';
 import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
 
@@ -355,19 +355,120 @@ export default function Step3Comparison() {
         </TabsContent>
       </Tabs>
 
+      {/* Carry Forward Section */}
+      <Card className="rounded-sm border shadow-sm">
+        <div className="flex items-center justify-between p-5 sm:p-6">
+          <div className="flex items-center gap-3">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <div>
+              <h3 className="font-medium text-sm">Pension Carry Forward</h3>
+              <p className="text-xs text-muted-foreground">Use unused allowance from the last 3 years</p>
+            </div>
+          </div>
+          <Switch
+            data-testid="toggle-carry-forward"
+            checked={step3.carryForward}
+            onCheckedChange={(v) => update({ carryForward: v })}
+          />
+        </div>
+        {step3.carryForward && (
+          <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0 border-t border-border">
+            <div className="pt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[['cfYear1', '3 years ago'], ['cfYear2', '2 years ago'], ['cfYear3', 'Last year']].map(([key, label]) => (
+                <div key={key} className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">{label} — contributions</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">£</span>
+                    <Input
+                      data-testid={`input-${key}`}
+                      className="pl-7 font-mono rounded-sm h-10"
+                      type="number"
+                      min={0}
+                      value={step3[key]}
+                      onChange={(e) => update({ [key]: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {(() => {
+              const cf = calculateCarryForward(step3.cfYear1, step3.cfYear2, step3.cfYear3);
+              return (
+                <div className="mt-4 p-4 bg-primary/[0.04] rounded-sm border border-primary/10">
+                  <div className="flex flex-wrap gap-6 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Unused Allowance</p>
+                      <p className="font-mono font-semibold text-primary">{formatCurrency(cf.totalUnused)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Max This Year (incl. carry forward)</p>
+                      <p className="font-mono font-semibold text-primary">{formatCurrency(cf.maxThisYear)}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    You must have been a member of a registered pension scheme in each year being carried forward from.
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </Card>
+
+      {/* 2029 NI Cap Section */}
+      {(() => {
+        const { totalAnnual } = calculateTotalSacrifice(salary, state.step2);
+        if (totalAnnual <= 0) return null;
+        const impact = calculate2029NImpact(totalAnnual, salary, taxYear);
+        return (
+          <Card className="rounded-sm border shadow-sm">
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <h3 className="font-medium text-sm">2029 NI Cap Impact</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">
+                From April 2029, only the first £2,000 of salary sacrifice pension contributions will be exempt from NI.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Current NI Saving</p>
+                  <p className="font-mono font-medium">{formatCurrency(dv(impact.currentEmployeeSaving, displayMode))}{dvLabel(displayMode)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Post-2029 NI Saving</p>
+                  <p className="font-mono font-medium">{formatCurrency(dv(impact.post2029EmployeeSaving, displayMode))}{dvLabel(displayMode)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Additional NI Cost</p>
+                  <p className="font-mono font-medium text-amber-600">{formatCurrency(dv(impact.additionalEmployeeCost, displayMode))}{dvLabel(displayMode)}</p>
+                </div>
+              </div>
+              {impact.stillWorthIt && (
+                <div className="mt-3 p-3 bg-primary/[0.04] rounded-sm border border-primary/10">
+                  <p className="text-xs text-primary font-medium">
+                    Still worth it — income tax relief of {formatCurrency(dv(impact.incomeTaxRelief, displayMode))}{dvLabel(displayMode)} continues in full. Net saving drops from {formatCurrency(dv(impact.currentTotal, displayMode))} to {formatCurrency(dv(impact.post2029Total, displayMode))}{dvLabel(displayMode)}.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Navigation */}
       <div className="flex justify-between pt-4">
         <Button
           data-testid="btn-back-step3"
           variant="outline"
-          onClick={() => dispatch({ type: 'SET_STEP', payload: 2 })}
+          onClick={() => dispatch({ type: 'SET_STEP', payload: 3 })}
           className="rounded-sm px-6 py-5 text-sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
         <Button
           data-testid="btn-next-step3"
-          onClick={() => dispatch({ type: 'SET_STEP', payload: 4 })}
+          onClick={() => dispatch({ type: 'SET_STEP', payload: 5 })}
           className="rounded-sm px-8 py-6 text-sm uppercase tracking-wider font-semibold"
         >
           View Full Results

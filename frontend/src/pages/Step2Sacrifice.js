@@ -6,18 +6,19 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, ArrowRight, PiggyBank, Car, Bike, Baby, Laptop, HeartPulse, Info } from 'lucide-react';
-import { getMarginalTaxRate, getMarginalNIRate, getChildcareVoucherCap, calculateTotalSacrifice } from '@/lib/taxEngine';
+import { ArrowLeft, ArrowRight, PiggyBank, Car, Bike, Baby, Laptop, HeartPulse, Info, AlertTriangle, Gift } from 'lucide-react';
+import { getMarginalTaxRate, getMarginalNIRate, getChildcareVoucherCap, calculateTotalSacrifice, checkStatutoryPayRisk, getConstants } from '@/lib/taxEngine';
 import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
 
 export default function Step2Sacrifice() {
   const { state, dispatch } = useWizard();
-  const { step2, taxYear, displayMode } = state;
+  const { step2, taxYear, displayMode, employerNIPassback } = state;
   const salary = parseSalaryInput(state.step1.grossSalary);
   const region = state.step1.taxRegion;
 
   const marginalTax = getMarginalTaxRate(salary, region, taxYear);
   const marginalNI = getMarginalNIRate(salary, taxYear);
+  const c = getConstants(taxYear);
   const childcareCap = getChildcareVoucherCap(salary, region);
 
   const updateScheme = (scheme, data) => {
@@ -289,6 +290,45 @@ export default function Step2Sacrifice() {
         </SchemeCard>
       </div>
 
+      {/* Employer NI Pass-back Toggle */}
+      {totals.totalAnnual > 0 && (
+        <Card className="rounded-sm border shadow-sm">
+          <div className="flex items-center justify-between p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-sm flex items-center justify-center bg-brass/10">
+                <Gift className="w-4 h-4 text-brass" />
+              </div>
+              <div>
+                <h3 className="font-medium text-sm">Employer NI Pass-back</h3>
+                <p className="text-xs text-muted-foreground">
+                  Employer adds their {(c.EMPLOYER_NI_RATE * 100).toFixed(1)}% NI saving ({formatCurrency(dv(totals.totalAnnual * c.EMPLOYER_NI_RATE, displayMode))}{dvLabel(displayMode)}) to your pension
+                </p>
+              </div>
+            </div>
+            <Switch
+              data-testid="toggle-employer-ni-passback"
+              checked={employerNIPassback}
+              onCheckedChange={(v) => dispatch({ type: 'SET_EMPLOYER_NI_PASSBACK', payload: v })}
+            />
+          </div>
+        </Card>
+      )}
+
+      {/* Statutory Pay Warning */}
+      {(() => {
+        const postSacrifice = salary - totals.totalAnnual;
+        const warnings = checkStatutoryPayRisk(postSacrifice);
+        if (warnings.length === 0) return null;
+        return warnings.map((w, i) => (
+          <div key={i} className="p-4 rounded-sm border border-red-200 bg-red-50">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-red-700 mt-0.5 shrink-0" />
+              <p className="text-sm text-red-900">{w}</p>
+            </div>
+          </div>
+        ));
+      })()}
+
       {/* Navigation */}
       <div className="flex justify-between pt-4">
         <Button
@@ -305,7 +345,7 @@ export default function Step2Sacrifice() {
           onClick={() => dispatch({ type: 'SET_STEP', payload: 3 })}
           className="rounded-sm px-8 py-6 text-sm uppercase tracking-wider font-semibold"
         >
-          Continue to Pension vs ISA
+          Continue to Bonus Sacrifice
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>

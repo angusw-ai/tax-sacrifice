@@ -2,14 +2,16 @@ import { useMemo } from 'react';
 import { useWizard } from '@/context/WizardContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Printer, AlertTriangle, Lightbulb, CheckCircle2, Info, TrendingUp } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, Printer, AlertTriangle, Lightbulb, CheckCircle2, Info, TrendingUp, Home, Baby } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
   calculateFullBreakdown, calculateIncomeTax, calculateEmployeeNI,
-  getMarginalTaxRate, getMarginalNIRate, TAX_CONSTANTS
+  getMarginalTaxRate, getMarginalNIRate, TAX_CONSTANTS,
+  calculateChildcareEntitlements, calculateMortgageCapacity, calculateTotalSacrifice, getConstants
 } from '@/lib/taxEngine';
 import { projectPension, projectISA, projectLISA, estimatePensionDrawdown } from '@/lib/projectionEngine';
 import { generateInsights } from '@/lib/insightsEngine';
@@ -144,6 +146,18 @@ export default function Step4Results() {
         </Button>
       </div>
 
+      {/* Quick Toggles */}
+      <div className="flex flex-wrap gap-4 items-center no-print">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <Switch
+            data-testid="toggle-mortgage-planning"
+            checked={state.mortgagePlanning}
+            onCheckedChange={(v) => dispatch({ type: 'SET_MORTGAGE_PLANNING', payload: v })}
+          />
+          <span className="text-muted-foreground">Planning a mortgage?</span>
+        </label>
+      </div>
+
       {/* Key Savings Highlight */}
       <Card className="rounded-sm border-2 border-primary/20 bg-primary/[0.02] shadow-sm">
         <CardContent className="p-6 sm:p-8">
@@ -249,6 +263,14 @@ export default function Step4Results() {
             <p className="text-xs text-muted-foreground mt-3">
               Effective cost per £1 into pension: <span className="font-mono font-medium">{((1 - marginalTax - marginalNI) * 100).toFixed(0)}p</span>
             </p>
+            {state.employerNIPassback && savings.employerNISaved > 0 && (
+              <div className="mt-3 p-3 bg-brass/5 border border-brass/20 rounded-sm">
+                <p className="text-xs font-medium">
+                  With employer NI pass-back: additional <span className="font-mono text-primary">{formatCurrency(dv(savings.employerNISaved, dm))}{dvLabel(dm)}</span> added to your pension.
+                  Total effective pension contribution: <span className="font-mono text-primary font-semibold">{formatCurrency(dv(pensionData.totalContribution + savings.employerNISaved, dm))}{dvLabel(dm)}</span>
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -367,12 +389,100 @@ export default function Step4Results() {
         </CardContent>
       </Card>
 
+      {/* Childcare Impact Section */}
+      {step1.hasChildren && (() => {
+        const childAges = (step1.childAges || '3').split(',').map(a => parseInt(a.trim()) || 3);
+        const childcare = calculateChildcareEntitlements(after.adjustedSalary, step1.numberOfChildren || 1, childAges);
+        const childcareBefore = calculateChildcareEntitlements(salary, step1.numberOfChildren || 1, childAges);
+        if (childcareBefore.totalAtRisk <= 0) return null;
+        return (
+          <Card className="rounded-sm border-2 border-amber-200 bg-amber-50/50 shadow-sm" data-testid="childcare-impact">
+            <CardContent className="p-6 sm:p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Baby className="w-5 h-5 text-amber-700" />
+                <h3 className="font-serif text-lg font-medium text-amber-900">Childcare Entitlements</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-amber-800 uppercase tracking-wider">Tax-Free Childcare</p>
+                  <p className="font-mono text-lg font-medium">{formatCurrency(childcare.tfcValue)}/yr</p>
+                  <p className="text-xs text-muted-foreground">Up to £2,000/child/year</p>
+                </div>
+                <div>
+                  <p className="text-xs text-amber-800 uppercase tracking-wider">30 Free Hours Value</p>
+                  <p className="font-mono text-lg font-medium">{formatCurrency(childcare.freeHoursValue)}/yr</p>
+                  <p className="text-xs text-muted-foreground">For children aged 2-4</p>
+                </div>
+                <div>
+                  <p className="text-xs text-amber-800 uppercase tracking-wider">Total Entitlement</p>
+                  <p className="font-mono text-lg font-semibold text-primary">{formatCurrency(childcare.totalValue)}/yr</p>
+                </div>
+              </div>
+              {!childcare.eligible && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-sm">
+                  <p className="text-sm text-red-900 font-medium">
+                    Your adjusted income of {formatCurrency(after.adjustedSalary)} is {formatCurrency(childcare.amountOver)} above the £100,000 threshold.
+                    You lose ALL childcare entitlements worth {formatCurrency(childcareBefore.totalAtRisk)}/yr.
+                  </p>
+                  <p className="text-sm text-red-800 mt-1">
+                    Sacrificing an additional {formatCurrency(childcare.sacrificeToRestore)} into pension would restore these entitlements — making the net cost of the sacrifice effectively negative.
+                  </p>
+                </div>
+              )}
+              {childcare.eligible && salary > 100000 && (
+                <div className="mt-4 p-4 bg-primary/[0.04] border border-primary/10 rounded-sm">
+                  <p className="text-sm text-primary font-medium">
+                    Your salary sacrifice has brought your adjusted income below £100,000, preserving {formatCurrency(childcare.totalValue)}/yr in childcare entitlements.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* Mortgage Impact Warning */}
+      {state.mortgagePlanning && (() => {
+        const mortgage = calculateMortgageCapacity(salary, after.adjustedSalary);
+        return (
+          <Card className="rounded-sm border shadow-sm" data-testid="mortgage-impact">
+            <CardContent className="p-6 sm:p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Home className="w-5 h-5 text-muted-foreground" />
+                <h3 className="font-serif text-lg font-medium">Mortgage Impact</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mb-4">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Gross Salary x 4.5</p>
+                  <p className="font-mono text-lg font-medium">{formatCurrency(mortgage.gross)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Post-Sacrifice x 4.5</p>
+                  <p className="font-mono text-lg font-medium">{formatCurrency(mortgage.postSacrifice)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Potential Reduction</p>
+                  <p className="font-mono text-lg font-medium text-amber-600">{formatCurrency(mortgage.diff)}</p>
+                </div>
+              </div>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground text-sm">Lender-specific treatment varies:</p>
+                <p>Lenders using <span className="font-medium text-foreground">gross salary</span> (e.g. Halifax, Virgin Money) — sacrifice has no impact on borrowing.</p>
+                <p>Lenders using <span className="font-medium text-foreground">net/post-sacrifice salary</span> — borrowing capacity may reduce by {formatCurrency(mortgage.diff)}.</p>
+                <p className="text-amber-700 font-medium mt-2">EV salary sacrifice is a fixed 2-4 year commitment. Some lenders treat this as a permanent income reduction. Consider timing carefully.</p>
+                <p>Reducing or pausing sacrifice 3-6 months before applying can improve mortgage offers. Speak to a broker for personalised advice.</p>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Navigation */}
       <div className="flex justify-between pt-4 no-print">
         <Button
           data-testid="btn-back-step4"
           variant="outline"
-          onClick={() => dispatch({ type: 'SET_STEP', payload: 3 })}
+          onClick={() => dispatch({ type: 'SET_STEP', payload: 4 })}
           className="rounded-sm px-6 py-5 text-sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back

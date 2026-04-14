@@ -306,3 +306,147 @@ export function calculateFullBreakdown(salary, region, studentLoan, schemes, emp
     sacrificeDetails: details,
   };
 }
+
+
+// ===== BONUS SACRIFICE CALCULATOR =====
+export function calculateBonusTaxation(salary, bonus, region, studentLoan, sacrificeAmount, taxYear) {
+  if (!bonus || bonus <= 0) return null;
+  const safeS = Math.min(sacrificeAmount || 0, bonus);
+
+  // Base: salary only
+  const baseTax = calculateIncomeTax(salary, region, taxYear);
+  const baseNI = calculateEmployeeNI(salary, taxYear);
+  const baseSL = calculateStudentLoan(salary, studentLoan, taxYear);
+  const baseTakeHome = salary - baseTax.totalTax - baseNI - baseSL;
+
+  // Scenario A: full bonus as cash
+  const totalCash = salary + bonus;
+  const cashTax = calculateIncomeTax(totalCash, region, taxYear);
+  const cashNI = calculateEmployeeNI(totalCash, taxYear);
+  const cashSL = calculateStudentLoan(totalCash, studentLoan, taxYear);
+  const cashTakeHome = totalCash - cashTax.totalTax - cashNI - cashSL;
+
+  // Scenario B: sacrifice portion
+  const totalAfter = salary + bonus - safeS;
+  const afterTax = calculateIncomeTax(totalAfter, region, taxYear);
+  const afterNI = calculateEmployeeNI(totalAfter, taxYear);
+  const afterSL = calculateStudentLoan(totalAfter, studentLoan, taxYear);
+  const afterTakeHome = totalAfter - afterTax.totalTax - afterNI - afterSL;
+
+  const bonusTaxAsCash = cashTax.totalTax - baseTax.totalTax;
+  const bonusNIAsCash = cashNI - baseNI;
+  const bonusSLAsCash = cashSL - baseSL;
+  const netBonusCash = bonus - bonusTaxAsCash - bonusNIAsCash - bonusSLAsCash;
+
+  const splitTax = afterTax.totalTax - baseTax.totalTax;
+  const splitNI = afterNI - baseNI;
+  const splitSL = afterSL - baseSL;
+  const cashPortion = bonus - safeS;
+  const netCashPortion = cashPortion - splitTax - splitNI - splitSL;
+
+  const effectiveRateCash = bonus > 0 ? (bonusTaxAsCash + bonusNIAsCash + bonusSLAsCash) / bonus : 0;
+  const effectiveRateSplit = cashPortion > 0 ? (splitTax + splitNI + splitSL) / cashPortion : 0;
+
+  const thresholds = [];
+  if (totalCash > 125140 && salary <= 125140) thresholds.push({ threshold: 125140, label: '£125,140 — PA fully lost', needed: totalCash - 125140 });
+  if (totalCash > 100000 && salary <= 100000) thresholds.push({ threshold: 100000, label: '£100k — PA taper + childcare lost', needed: totalCash - 100000 });
+  if (totalCash > 80000 && salary <= 80000) thresholds.push({ threshold: 80000, label: '£80k — Full HICBC', needed: totalCash - 80000 });
+  if (totalCash > 60000 && salary <= 60000) thresholds.push({ threshold: 60000, label: '£60k — HICBC starts', needed: totalCash - 60000 });
+
+  return {
+    totalWithBonus: totalCash,
+    adjustedAfterSacrifice: totalAfter,
+    asCash: { net: netBonusCash, tax: bonusTaxAsCash, ni: bonusNIAsCash, sl: bonusSLAsCash, rate: effectiveRateCash },
+    afterSacrifice: { net: netCashPortion, tax: splitTax, ni: splitNI, sl: splitSL, pensionIn: safeS, rate: effectiveRateSplit },
+    saved: { tax: bonusTaxAsCash - splitTax, ni: bonusNIAsCash - splitNI, sl: bonusSLAsCash - splitSL, total: (bonusTaxAsCash + bonusNIAsCash + bonusSLAsCash) - (splitTax + splitNI + splitSL) },
+    thresholds,
+  };
+}
+
+// ===== CHILDCARE ENTITLEMENTS =====
+export function calculateChildcareEntitlements(adjustedIncome, numChildren, childAges) {
+  const TFC_PER_CHILD = 2000;
+  const FREE_HOURS_MONTHLY = 300;
+  let tfcValue = 0;
+  let freeHoursValue = 0;
+  for (let i = 0; i < numChildren; i++) {
+    const age = (childAges && childAges[i]) || 3;
+    if (age < 12) tfcValue += TFC_PER_CHILD;
+    if (age >= 2 && age <= 4) freeHoursValue += FREE_HOURS_MONTHLY * 12;
+  }
+  const eligible = adjustedIncome < 100000;
+  const totalValue = eligible ? tfcValue + freeHoursValue : 0;
+  const totalAtRisk = tfcValue + freeHoursValue;
+  return {
+    eligible,
+    tfcValue: eligible ? tfcValue : 0,
+    freeHoursValue: eligible ? freeHoursValue : 0,
+    totalValue,
+    totalAtRisk,
+    amountOver: Math.max(0, adjustedIncome - 100000),
+    sacrificeToRestore: Math.max(0, adjustedIncome - 100000),
+  };
+}
+
+// ===== CARRY FORWARD =====
+export function calculateCarryForward(y1 = 0, y2 = 0, y3 = 0, aa = 60000) {
+  const unused1 = Math.max(0, aa - y1);
+  const unused2 = Math.max(0, aa - y2);
+  const unused3 = Math.max(0, aa - y3);
+  const totalUnused = unused1 + unused2 + unused3;
+  return {
+    years: [
+      { label: '3 years ago', contributed: y1, unused: unused1 },
+      { label: '2 years ago', contributed: y2, unused: unused2 },
+      { label: 'Last year', contributed: y3, unused: unused3 },
+    ],
+    totalUnused,
+    maxThisYear: aa + totalUnused,
+  };
+}
+
+// ===== 2029 NI CAP IMPACT =====
+export function calculate2029NImpact(annualSacrifice, salary, taxYear) {
+  const c = getConstants(taxYear);
+  const NI_CAP = 2000;
+  const niRate = salary > c.NI_UPPER_LIMIT ? c.NI_UPPER_RATE : c.NI_LOWER_RATE;
+  const currentEmpNISaving = annualSacrifice * niRate;
+  const exemptPortion = Math.min(annualSacrifice, NI_CAP);
+  const nonExempt = Math.max(0, annualSacrifice - NI_CAP);
+  const post2029EmpNISaving = exemptPortion * niRate;
+  const additionalNICost = nonExempt * niRate;
+  const currentErNISaving = annualSacrifice * c.EMPLOYER_NI_RATE;
+  const post2029ErNISaving = exemptPortion * c.EMPLOYER_NI_RATE;
+  const additionalErNICost = nonExempt * c.EMPLOYER_NI_RATE;
+  const margTax = getMarginalTaxRate(salary, 'england', taxYear);
+  const taxRelief = annualSacrifice * margTax;
+  return {
+    currentEmployeeSaving: currentEmpNISaving,
+    post2029EmployeeSaving: post2029EmpNISaving,
+    additionalEmployeeCost: additionalNICost,
+    currentEmployerSaving: currentErNISaving,
+    post2029EmployerSaving: post2029ErNISaving,
+    additionalEmployerCost: additionalErNICost,
+    incomeTaxRelief: taxRelief,
+    currentTotal: currentEmpNISaving + taxRelief,
+    post2029Total: post2029EmpNISaving + taxRelief,
+    annualCostIncrease: additionalNICost + additionalErNICost,
+    stillWorthIt: taxRelief > additionalNICost,
+  };
+}
+
+// ===== MORTGAGE CAPACITY =====
+export function calculateMortgageCapacity(gross, postSacrifice) {
+  const m = 4.5;
+  return { gross: gross * m, postSacrifice: postSacrifice * m, diff: (gross - postSacrifice) * m };
+}
+
+// ===== STATUTORY PAY WARNING =====
+export function checkStatutoryPayRisk(postSacrificeSalary) {
+  const LEL = 6396;
+  const NMW = 24334;
+  const warnings = [];
+  if (postSacrificeSalary < LEL * 1.2) warnings.push('Post-sacrifice salary is near the Lower Earnings Limit (£6,396/yr). This may affect State Pension qualifying years and Statutory Maternity/Paternity Pay.');
+  if (postSacrificeSalary < NMW * 1.1) warnings.push('Post-sacrifice salary approaches National Minimum Wage. Your employer cannot reduce pay below NMW via salary sacrifice.');
+  return warnings;
+}
