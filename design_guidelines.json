@@ -1,0 +1,101 @@
+{
+  "theme_and_archetype": {
+    "theme": "Light",
+    "archetype": "5 (Jewel & Luxury) with 'Old Money Tech' variant",
+    "description": "A premium, intelligent, and reassuring aesthetic designed for high earners (£50k-£200k+). Eschews modern 'SaaS-bro' gradients and excessive border-radius in favor of crisp edges, classic serif typography, sterile monospace for numbers, and deep heritage colors (forest green, navy, brass/gold).",
+    "emotion": "Trust, Wealth, Exclusivity, Clarity"
+  },
+  "typography": {
+    "pairing_strategy": "Old Money Tech (Classic Serif Head + Sterile Mono Body/Numbers)",
+    "fonts": {
+      "headings": "'Cormorant Garamond', 'Playfair Display', serif",
+      "body": "'IBM Plex Sans', -apple-system, sans-serif",
+      "mono_numbers": "'IBM Plex Mono', monospace"
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-5xl tracking-tight font-medium text-primary",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-medium",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base text-foreground leading-relaxed",
+      "labels_overlines": "text-xs uppercase tracking-[0.2em] font-semibold text-muted-foreground",
+      "numbers": "font-mono tracking-tight"
+    },
+    "rules": [
+      "No generic sans-serif (Inter/Roboto) for headings.",
+      "Financial figures must use the monospace font for tabular alignment.",
+      "Headings should use font-medium or font-semibold, not font-black."
+    ]
+  },
+  "color_palette": {
+    "background": "#FBFBF9",
+    "foreground": "#111827",
+    "card": "#FFFFFF",
+    "card_foreground": "#111827",
+    "primary": "#1E3F20",
+    "primary_foreground": "#FFFFFF",
+    "secondary": "#F0EDE6",
+    "secondary_foreground": "#111827",
+    "muted": "#F0EDE6",
+    "muted_foreground": "#6B7280",
+    "accent": "#C19D60",
+    "accent_foreground": "#FFFFFF",
+    "destructive": "#8B0000",
+    "border": "#E5E0D8",
+    "input": "#E5E0D8",
+    "ring": "#1E3F20",
+    "charts": {
+      "take_home": "#1E3F20",
+      "tax": "#9CA3AF",
+      "ni": "#D1D5DB",
+      "pension": "#1E293B",
+      "isa": "#C19D60"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing, Optical Alignment, Crisp Edges",
+    "borders": "1px solid #E5E0D8 (crisp, warm-tinted borders). Border radius max 2px (rounded-sm) for a sharp, tailored look.",
+    "wizard_layout": "A central, focused column on desktop (max-w-3xl) with ample vertical padding (py-12 to py-24). The wizard steps should feel like high-end print forms.",
+    "dashboard_layout": "The 'Control Room' grid layout. grid-cols-1 md:grid-cols-3 lg:grid-cols-4 with gap-6. Density is higher here than the wizard.",
+    "containers": "All containers holding form inputs must have p-8 or p-12. No cramped inputs."
+  },
+  "component_strategies": {
+    "wizard_stepper": "Text-based or subtle line-based progress indicator. Avoid bulky colorful circles.",
+    "inputs_and_forms": "Shadcn components heavily customized: square corners (rounded-none or rounded-sm), pure white background, 1px warm border. Focus state must use ring-primary (#1E3F20). Number inputs for money should have a persistent '£' prefix.",
+    "buttons": "Primary buttons: bg-primary text-white, square corners, px-8 py-6. Hover: bg-[#152D16]. Secondary/Outline buttons: border-primary text-primary. No pill-shaped buttons.",
+    "toggles": "Shadcn Switch customized to use #1E3F20 when active.",
+    "charts": "Recharts. Use simple bar charts (stacked for salary breakdown) and minimal line charts (compound growth). Remove default grid lines or make them extremely faint (#E5E0D8). Axis text must use monospace font.",
+    "print_to_pdf": "Place a highly visible, elegant 'Export to PDF' button in the Step 4 Results Dashboard. Utilize a JS library (e.g., html2pdf.js or jspdf+html2canvas) to capture the dashboard node."
+  },
+  "motion_and_interactions": {
+    "transitions": "Subtle and slow. transition-all duration-300 ease-in-out.",
+    "hover_states": "Buttons and interactive cards slightly lift (-translate-y-0.5) with a soft, diffuse shadow (shadow-md).",
+    "page_transitions": "Wizard steps should fade in softly using Framer Motion (opacity: 0 to 1, y: 10 to 0)."
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1523999664798-a913d5d08b5b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwxfHxsb25kb24lMjBmaW5hbmNpYWwlMjBkaXN0cmljdCUyMGNpdHl8ZW58MHx8fHwxNzc2MjA2Mzk5fDA&ixlib=rb-4.1.0&q=85",
+      "category": "hero_background",
+      "description": "Low angle view of high-rise buildings in financial district. Use with a heavy white/parchment overlay (bg-white/80 or bg-[#FBFBF9]/90) to create a subtle watermark background for the wizard."
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1617565084799-c4c60ea9ad7a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwxfHxwYXJjaG1lbnQlMjB0ZXh0dXJlJTIwb2xkJTIwcGFwZXJ8ZW58MHx8fHwxNzc2MjA2NDAwfDA&ixlib=rb-4.1.0&q=85",
+      "category": "texture",
+      "description": "Subtle paper texture. Can be used as a background image with mix-blend-multiply at very low opacity (5-10%) to give the app a 'print' feel."
+    }
+  ],
+  "accessibility_and_testing": {
+    "contrast": "Ensure all text, especially muted labels, passes APCA/WCAG AA standards against the parchment background.",
+    "testing_attributes": "All inputs, buttons, toggles, and major output values MUST have 'data-testid' attributes (e.g., data-testid='input-gross-salary', data-testid='toggle-pension', data-testid='result-take-home')."
+  },
+  "instructions_to_main_agent": [
+    "1. FRAMEWORK: Use React, Tailwind CSS, Shadcn UI (customized).",
+    "2. WIZARD STATE: Use a robust state management solution (React Context or Zustand) to store inputs across the 4 steps, as Step 4 aggregates all data.",
+    "3. CALCULATIONS (CRITICAL): Ensure UK tax bands (England/Wales vs Scotland) are implemented correctly for higher (£50k+) and additional rate (£125k+) taxpayers. Include Personal Allowance tapering above £100k.",
+    "4. SALARY SACRIFICE LOGIC: Deduct sacrifice amounts BEFORE applying income tax and NI. For EV, calculate 2% BIK on the car's value and add to taxable income.",
+    "5. CHARTS: Use Recharts for Step 4. Ensure tooltips are styled to match the 'Old Money' theme (sharp corners, serif font for headers, mono for values).",
+    "6. PDF EXPORT: Add a 'Download Report' button on the final step that triggers html2canvas/jsPDF to export the results view.",
+    "7. FONTS: Import 'Cormorant Garamond' (400,500,600), 'IBM Plex Sans' (400,500), and 'IBM Plex Mono' (400,500) from Google Fonts in the HTML template.",
+    "8. TAILWIND CONFIG: Update tailwind.config.js to include these specific colors, border-radius overrides, and font-families."
+  ]
+}
