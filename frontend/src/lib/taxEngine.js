@@ -1,49 +1,112 @@
-// UK Tax Engine 2024/25
+// UK Tax Engine — supports 2024/25 and 2025/26
 
-export const TAX_CONSTANTS = {
-  PERSONAL_ALLOWANCE: 12570,
-  PA_TAPER_START: 100000,
-  PA_TAPER_END: 125140,
-  NI_PRIMARY_THRESHOLD: 12570,
-  NI_UPPER_LIMIT: 50270,
-  NI_LOWER_RATE: 0.08,
-  NI_UPPER_RATE: 0.02,
-  EMPLOYER_NI_THRESHOLD: 9100,
-  EMPLOYER_NI_RATE: 0.138,
-  PENSION_ANNUAL_ALLOWANCE: 60000,
-  ISA_ANNUAL_ALLOWANCE: 20000,
-  LISA_ANNUAL_ALLOWANCE: 4000,
-  LISA_BONUS_RATE: 0.25,
-  HICBC_START: 60000,
-  HICBC_END: 80000,
-};
-
-const STUDENT_LOANS = {
-  plan1: { threshold: 22015, rate: 0.09 },
-  plan2: { threshold: 27295, rate: 0.09 },
-  plan4: { threshold: 27660, rate: 0.09 },
-  postgrad: { threshold: 21000, rate: 0.06 },
-};
-
-export function calculatePersonalAllowance(income) {
-  if (income <= TAX_CONSTANTS.PA_TAPER_START) return TAX_CONSTANTS.PERSONAL_ALLOWANCE;
-  const reduction = Math.floor((income - TAX_CONSTANTS.PA_TAPER_START) / 2);
-  return Math.max(0, TAX_CONSTANTS.PERSONAL_ALLOWANCE - reduction);
-}
-
-export function calculateIncomeTax(income, region = 'england') {
-  const pa = calculatePersonalAllowance(income);
-
-  let bands;
-  if (region === 'scotland') {
-    bands = [
-      { name: 'Personal Allowance', rate: 0, upper: pa },
+const TAX_YEARS = {
+  '2024/25': {
+    PERSONAL_ALLOWANCE: 12570,
+    PA_TAPER_START: 100000,
+    PA_TAPER_END: 125140,
+    NI_PRIMARY_THRESHOLD: 12570,
+    NI_UPPER_LIMIT: 50270,
+    NI_LOWER_RATE: 0.08,
+    NI_UPPER_RATE: 0.02,
+    EMPLOYER_NI_THRESHOLD: 9100,
+    EMPLOYER_NI_RATE: 0.138,
+    PENSION_ANNUAL_ALLOWANCE: 60000,
+    ISA_ANNUAL_ALLOWANCE: 20000,
+    LISA_ANNUAL_ALLOWANCE: 4000,
+    LISA_BONUS_RATE: 0.25,
+    HICBC_START: 60000,
+    HICBC_END: 80000,
+    STUDENT_LOANS: {
+      plan1: { threshold: 22015, rate: 0.09 },
+      plan2: { threshold: 27295, rate: 0.09 },
+      plan4: { threshold: 27660, rate: 0.09 },
+      postgrad: { threshold: 21000, rate: 0.06 },
+    },
+    SCOTLAND_BANDS: [
       { name: 'Starter Rate (19%)', rate: 0.19, upper: 14876 },
       { name: 'Basic Rate (20%)', rate: 0.20, upper: 26561 },
       { name: 'Intermediate Rate (21%)', rate: 0.21, upper: 43662 },
       { name: 'Higher Rate (42%)', rate: 0.42, upper: 75000 },
       { name: 'Advanced Rate (45%)', rate: 0.45, upper: 125140 },
       { name: 'Top Rate (48%)', rate: 0.48, upper: Infinity },
+    ],
+    SCOTLAND_MARGINAL: [
+      { threshold: 125140, rate: 0.48 },
+      { threshold: 75000, rate: 0.45 },
+      { threshold: 43662, rate: 0.42 },
+      { threshold: 26561, rate: 0.21 },
+      { threshold: 14876, rate: 0.20 },
+      { threshold: 12570, rate: 0.19 },
+    ],
+  },
+  '2025/26': {
+    PERSONAL_ALLOWANCE: 12570,
+    PA_TAPER_START: 100000,
+    PA_TAPER_END: 125140,
+    NI_PRIMARY_THRESHOLD: 12570,
+    NI_UPPER_LIMIT: 50270,
+    NI_LOWER_RATE: 0.08,
+    NI_UPPER_RATE: 0.02,
+    EMPLOYER_NI_THRESHOLD: 5000,
+    EMPLOYER_NI_RATE: 0.15,
+    PENSION_ANNUAL_ALLOWANCE: 60000,
+    ISA_ANNUAL_ALLOWANCE: 20000,
+    LISA_ANNUAL_ALLOWANCE: 4000,
+    LISA_BONUS_RATE: 0.25,
+    HICBC_START: 60000,
+    HICBC_END: 80000,
+    STUDENT_LOANS: {
+      plan1: { threshold: 26065, rate: 0.09 },
+      plan2: { threshold: 28470, rate: 0.09 },
+      plan4: { threshold: 32745, rate: 0.09 },
+      postgrad: { threshold: 21000, rate: 0.06 },
+    },
+    SCOTLAND_BANDS: [
+      { name: 'Starter Rate (19%)', rate: 0.19, upper: 15397 },
+      { name: 'Basic Rate (20%)', rate: 0.20, upper: 27491 },
+      { name: 'Intermediate Rate (21%)', rate: 0.21, upper: 43662 },
+      { name: 'Higher Rate (42%)', rate: 0.42, upper: 75000 },
+      { name: 'Advanced Rate (45%)', rate: 0.45, upper: 125140 },
+      { name: 'Top Rate (48%)', rate: 0.48, upper: Infinity },
+    ],
+    SCOTLAND_MARGINAL: [
+      { threshold: 125140, rate: 0.48 },
+      { threshold: 75000, rate: 0.45 },
+      { threshold: 43662, rate: 0.42 },
+      { threshold: 27491, rate: 0.21 },
+      { threshold: 15397, rate: 0.20 },
+      { threshold: 12570, rate: 0.19 },
+    ],
+  },
+};
+
+export const DEFAULT_TAX_YEAR = '2025/26';
+export const AVAILABLE_TAX_YEARS = Object.keys(TAX_YEARS);
+
+export function getConstants(taxYear = DEFAULT_TAX_YEAR) {
+  return TAX_YEARS[taxYear] || TAX_YEARS[DEFAULT_TAX_YEAR];
+}
+
+// Backward-compatible export pointing to default year
+export const TAX_CONSTANTS = TAX_YEARS[DEFAULT_TAX_YEAR];
+
+export function calculatePersonalAllowance(income, taxYear) {
+  const c = getConstants(taxYear);
+  if (income <= c.PA_TAPER_START) return c.PERSONAL_ALLOWANCE;
+  const reduction = Math.floor((income - c.PA_TAPER_START) / 2);
+  return Math.max(0, c.PERSONAL_ALLOWANCE - reduction);
+}
+
+export function calculateIncomeTax(income, region = 'england', taxYear) {
+  const c = getConstants(taxYear);
+  const pa = calculatePersonalAllowance(income, taxYear);
+
+  let bands;
+  if (region === 'scotland') {
+    bands = [
+      { name: 'Personal Allowance', rate: 0, upper: pa },
+      ...c.SCOTLAND_BANDS,
     ];
   } else {
     bands = [
@@ -75,41 +138,42 @@ export function calculateIncomeTax(income, region = 'england') {
   return { totalTax, breakdown, personalAllowance: pa };
 }
 
-export function calculateEmployeeNI(income) {
+export function calculateEmployeeNI(income, taxYear) {
+  const c = getConstants(taxYear);
   let ni = 0;
-  if (income > TAX_CONSTANTS.NI_PRIMARY_THRESHOLD) {
-    const band = Math.min(income, TAX_CONSTANTS.NI_UPPER_LIMIT) - TAX_CONSTANTS.NI_PRIMARY_THRESHOLD;
-    ni += Math.max(0, band) * TAX_CONSTANTS.NI_LOWER_RATE;
+  if (income > c.NI_PRIMARY_THRESHOLD) {
+    const band = Math.min(income, c.NI_UPPER_LIMIT) - c.NI_PRIMARY_THRESHOLD;
+    ni += Math.max(0, band) * c.NI_LOWER_RATE;
   }
-  if (income > TAX_CONSTANTS.NI_UPPER_LIMIT) {
-    ni += (income - TAX_CONSTANTS.NI_UPPER_LIMIT) * TAX_CONSTANTS.NI_UPPER_RATE;
+  if (income > c.NI_UPPER_LIMIT) {
+    ni += (income - c.NI_UPPER_LIMIT) * c.NI_UPPER_RATE;
   }
   return ni;
 }
 
-export function calculateEmployerNI(income) {
-  if (income <= TAX_CONSTANTS.EMPLOYER_NI_THRESHOLD) return 0;
-  return (income - TAX_CONSTANTS.EMPLOYER_NI_THRESHOLD) * TAX_CONSTANTS.EMPLOYER_NI_RATE;
+export function calculateEmployerNI(income, taxYear) {
+  const c = getConstants(taxYear);
+  if (income <= c.EMPLOYER_NI_THRESHOLD) return 0;
+  return (income - c.EMPLOYER_NI_THRESHOLD) * c.EMPLOYER_NI_RATE;
 }
 
-export function calculateStudentLoan(income, plan) {
+export function calculateStudentLoan(income, plan, taxYear) {
   if (!plan || plan === 'none') return 0;
-  const config = STUDENT_LOANS[plan];
+  const c = getConstants(taxYear);
+  const config = c.STUDENT_LOANS[plan];
   if (!config || income <= config.threshold) return 0;
   return (income - config.threshold) * config.rate;
 }
 
-export function getMarginalTaxRate(income, region) {
-  if (income > TAX_CONSTANTS.PA_TAPER_START && income <= TAX_CONSTANTS.PA_TAPER_END) {
+export function getMarginalTaxRate(income, region, taxYear) {
+  const c = getConstants(taxYear);
+  if (income > c.PA_TAPER_START && income <= c.PA_TAPER_END) {
     return region === 'scotland' ? 0.63 : 0.60;
   }
   if (region === 'scotland') {
-    if (income > 125140) return 0.48;
-    if (income > 75000) return 0.45;
-    if (income > 43662) return 0.42;
-    if (income > 26561) return 0.21;
-    if (income > 14876) return 0.20;
-    if (income > 12570) return 0.19;
+    for (const { threshold, rate } of c.SCOTLAND_MARGINAL) {
+      if (income > threshold) return rate;
+    }
     return 0;
   }
   if (income > 125140) return 0.45;
@@ -118,9 +182,10 @@ export function getMarginalTaxRate(income, region) {
   return 0;
 }
 
-export function getMarginalNIRate(income) {
-  if (income > TAX_CONSTANTS.NI_UPPER_LIMIT) return TAX_CONSTANTS.NI_UPPER_RATE;
-  if (income > TAX_CONSTANTS.NI_PRIMARY_THRESHOLD) return TAX_CONSTANTS.NI_LOWER_RATE;
+export function getMarginalNIRate(income, taxYear) {
+  const c = getConstants(taxYear);
+  if (income > c.NI_UPPER_LIMIT) return c.NI_UPPER_RATE;
+  if (income > c.NI_PRIMARY_THRESHOLD) return c.NI_LOWER_RATE;
   return 0;
 }
 
@@ -181,23 +246,23 @@ export function calculateTotalSacrifice(salary, schemes) {
   return { totalAnnual, bikValue, details };
 }
 
-export function calculateFullBreakdown(salary, region, studentLoan, schemes, employerPensionPct = 0) {
+export function calculateFullBreakdown(salary, region, studentLoan, schemes, employerPensionPct = 0, taxYear) {
   const { totalAnnual, bikValue, details } = calculateTotalSacrifice(salary, schemes);
 
   // Before sacrifice
-  const beforeTax = calculateIncomeTax(salary, region);
-  const beforeNI = calculateEmployeeNI(salary);
-  const beforeEmployerNI = calculateEmployerNI(salary);
-  const beforeStudentLoan = calculateStudentLoan(salary, studentLoan);
+  const beforeTax = calculateIncomeTax(salary, region, taxYear);
+  const beforeNI = calculateEmployeeNI(salary, taxYear);
+  const beforeEmployerNI = calculateEmployerNI(salary, taxYear);
+  const beforeStudentLoan = calculateStudentLoan(salary, studentLoan, taxYear);
   const beforeTakeHome = salary - beforeTax.totalTax - beforeNI - beforeStudentLoan;
 
   // After sacrifice
   const adjustedSalary = Math.max(0, salary - totalAnnual);
   const taxableIncome = adjustedSalary + bikValue;
-  const afterTax = calculateIncomeTax(taxableIncome, region);
-  const afterNI = calculateEmployeeNI(adjustedSalary);
-  const afterEmployerNI = calculateEmployerNI(adjustedSalary);
-  const afterStudentLoan = calculateStudentLoan(adjustedSalary, studentLoan);
+  const afterTax = calculateIncomeTax(taxableIncome, region, taxYear);
+  const afterNI = calculateEmployeeNI(adjustedSalary, taxYear);
+  const afterEmployerNI = calculateEmployerNI(adjustedSalary, taxYear);
+  const afterStudentLoan = calculateStudentLoan(adjustedSalary, studentLoan, taxYear);
   const afterTakeHome = adjustedSalary - afterTax.totalTax - afterNI - afterStudentLoan;
 
   const employerPension = salary * (employerPensionPct / 100);

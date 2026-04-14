@@ -13,7 +13,7 @@ import {
 } from '@/lib/taxEngine';
 import { projectPension, projectISA, projectLISA, estimatePensionDrawdown } from '@/lib/projectionEngine';
 import { generateInsights } from '@/lib/insightsEngine';
-import { formatCurrency, parseSalaryInput } from '@/lib/formatters';
+import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
 
 const COLORS = {
   takeHome: '#1E3F20',
@@ -29,16 +29,17 @@ const COLORS = {
 
 export default function Step4Results() {
   const { state, dispatch } = useWizard();
-  const { step1, step2, step3 } = state;
+  const { step1, step2, step3, taxYear, displayMode } = state;
   const salary = parseSalaryInput(step1.grossSalary);
   const region = step1.taxRegion;
   const age = parseInt(step1.age) || 30;
   const employerPct = parseFloat(step1.employerPensionPct) || 0;
+  const dm = displayMode;
 
   const breakdown = useMemo(() => {
     if (salary <= 0) return null;
-    return calculateFullBreakdown(salary, region, step1.studentLoan, step2, employerPct);
-  }, [salary, region, step1.studentLoan, step2, employerPct]);
+    return calculateFullBreakdown(salary, region, step1.studentLoan, step2, employerPct, taxYear);
+  }, [salary, region, step1.studentLoan, step2, employerPct, taxYear]);
 
   const insights = useMemo(() => {
     if (!breakdown) return [];
@@ -118,8 +119,8 @@ export default function Step4Results() {
   }
 
   const totalProjected = projChartData.length > 0 ? projChartData[projChartData.length - 1].Combined : 0;
-  const marginalTax = getMarginalTaxRate(salary, region);
-  const marginalNI = getMarginalNIRate(salary);
+  const marginalTax = getMarginalTaxRate(salary, region, taxYear);
+  const marginalNI = getMarginalNIRate(salary, taxYear);
 
   return (
     <div className="space-y-8" id="results-dashboard">
@@ -147,10 +148,10 @@ export default function Step4Results() {
       <Card className="rounded-sm border-2 border-primary/20 bg-primary/[0.02] shadow-sm">
         <CardContent className="p-6 sm:p-8">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            <ResultStat testId="result-tax-saved" label="Tax Saved" value={formatCurrency(savings.taxSaved)} sub="/year" accent />
-            <ResultStat testId="result-ni-saved" label="NI Saved" value={formatCurrency(savings.niSaved)} sub="/year" accent />
-            <ResultStat testId="result-total-saved" label="Total Saved" value={formatCurrency(savings.totalSaved)} sub="/year" accent large />
-            <ResultStat testId="result-employer-ni-saved" label="Employer NI Saved" value={formatCurrency(savings.employerNISaved)} sub="/year" />
+            <ResultStat testId="result-tax-saved" label="Tax Saved" value={formatCurrency(dv(savings.taxSaved, dm))} sub={dvLabel(dm)} accent />
+            <ResultStat testId="result-ni-saved" label="NI Saved" value={formatCurrency(dv(savings.niSaved, dm))} sub={dvLabel(dm)} accent />
+            <ResultStat testId="result-total-saved" label="Total Saved" value={formatCurrency(dv(savings.totalSaved, dm))} sub={dvLabel(dm)} accent large />
+            <ResultStat testId="result-employer-ni-saved" label="Employer NI Saved" value={formatCurrency(dv(savings.employerNISaved, dm))} sub={dvLabel(dm)} />
           </div>
         </CardContent>
       </Card>
@@ -184,17 +185,16 @@ export default function Step4Results() {
                 </tr>
               </thead>
               <tbody>
-                <TableRow label="Gross Salary" before={salary} after={salary} />
-                <TableRow label="Salary Sacrifice" before={0} after={-after.totalSacrifice} isSacrifice />
-                <TableRow label="Adjusted Salary" before={salary} after={after.adjustedSalary} bold />
-                <TableRow label="Personal Allowance" before={before.incomeTax.personalAllowance} after={after.incomeTax.personalAllowance} />
-                <TableRow label="Income Tax" before={-before.incomeTax.totalTax} after={-after.incomeTax.totalTax} />
-                <TableRow label="Employee NI" before={-before.employeeNI} after={-after.employeeNI} />
+                <TableRow label="Gross Salary" before={salary} after={salary} dm={dm} />
+                <TableRow label="Salary Sacrifice" before={0} after={-after.totalSacrifice} isSacrifice dm={dm} />
+                <TableRow label="Adjusted Salary" before={salary} after={after.adjustedSalary} bold dm={dm} />
+                <TableRow label="Personal Allowance" before={before.incomeTax.personalAllowance} after={after.incomeTax.personalAllowance} dm={dm} />
+                <TableRow label="Income Tax" before={-before.incomeTax.totalTax} after={-after.incomeTax.totalTax} dm={dm} />
+                <TableRow label="Employee NI" before={-before.employeeNI} after={-after.employeeNI} dm={dm} />
                 {(before.studentLoan > 0 || after.studentLoan > 0) && (
-                  <TableRow label="Student Loan" before={-before.studentLoan} after={-after.studentLoan} />
+                  <TableRow label="Student Loan" before={-before.studentLoan} after={-after.studentLoan} dm={dm} />
                 )}
-                <TableRow label="Take-Home Pay" before={before.takeHome} after={after.takeHome} bold accent />
-                <TableRow label="Monthly Take-Home" before={before.takeHome / 12} after={after.takeHome / 12} bold accent />
+                <TableRow label={`Take-Home Pay ${dvLabel(dm)}`} before={dv(before.takeHome, dm)} after={dv(after.takeHome, dm)} bold accent dm="annual" />
               </tbody>
             </table>
           </div>
@@ -235,15 +235,15 @@ export default function Step4Results() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Your Contribution</p>
-                <p className="font-mono text-lg font-medium">{formatCurrency(pensionData.employeeContribution)}/yr</p>
+                <p className="font-mono text-lg font-medium">{formatCurrency(dv(pensionData.employeeContribution, dm))}{dvLabel(dm)}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Employer Contribution</p>
-                <p className="font-mono text-lg font-medium">{formatCurrency(pensionData.employerContribution)}/yr</p>
+                <p className="font-mono text-lg font-medium">{formatCurrency(dv(pensionData.employerContribution, dm))}{dvLabel(dm)}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Total into Pension</p>
-                <p data-testid="result-total-pension" className="font-mono text-lg font-medium text-primary">{formatCurrency(pensionData.totalContribution)}/yr</p>
+                <p data-testid="result-total-pension" className="font-mono text-lg font-medium text-primary">{formatCurrency(dv(pensionData.totalContribution, dm))}{dvLabel(dm)}</p>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
@@ -348,20 +348,20 @@ export default function Step4Results() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-muted-foreground">Annual tax + NI saved by sacrificing</span>
-              <p className="font-mono text-xl font-medium text-primary mt-1">{formatCurrency(savings.totalSaved)}</p>
+              <span className="text-muted-foreground">Tax + NI saved by sacrificing</span>
+              <p className="font-mono text-xl font-medium text-primary mt-1">{formatCurrency(dv(savings.totalSaved, dm))}{dvLabel(dm)}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Projected wealth at {step3.horizon} years</span>
               <p className="font-mono text-xl font-medium text-primary mt-1">{formatCurrency(totalProjected)}</p>
             </div>
             <div>
-              <span className="text-muted-foreground">Monthly take-home reduction</span>
-              <p className="font-mono text-lg font-medium mt-1">{formatCurrency((before.takeHome - after.takeHome) / 12)}</p>
+              <span className="text-muted-foreground">Take-home reduction</span>
+              <p className="font-mono text-lg font-medium mt-1">{formatCurrency(dv(before.takeHome - after.takeHome, dm))}{dvLabel(dm)}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Employer NI saved (potential pass-back)</span>
-              <p className="font-mono text-lg font-medium mt-1">{formatCurrency(savings.employerNISaved)}</p>
+              <p className="font-mono text-lg font-medium mt-1">{formatCurrency(dv(savings.employerNISaved, dm))}{dvLabel(dm)}</p>
             </div>
           </div>
         </CardContent>
@@ -401,14 +401,16 @@ function ResultStat({ testId, label, value, sub, accent, large }) {
   );
 }
 
-function TableRow({ label, before, after, bold, accent, isSacrifice }) {
-  const diff = (after || 0) - (before || 0);
+function TableRow({ label, before, after, bold, accent, isSacrifice, dm = 'annual' }) {
+  const b = dv(before, dm);
+  const a = dv(after, dm);
+  const diff = (a || 0) - (b || 0);
   return (
     <tr className="border-b border-border/50 last:border-0">
       <td className={`p-4 ${bold ? 'font-medium' : ''}`}>{label}</td>
-      <td className={`p-4 text-right font-mono text-sm ${accent ? 'text-primary font-medium' : ''}`}>{formatCurrency(Math.abs(before))}</td>
+      <td className={`p-4 text-right font-mono text-sm ${accent ? 'text-primary font-medium' : ''}`}>{formatCurrency(Math.abs(b))}</td>
       <td className={`p-4 text-right font-mono text-sm ${accent ? 'text-primary font-medium' : ''}`}>
-        {isSacrifice ? `-${formatCurrency(Math.abs(after))}` : formatCurrency(Math.abs(after))}
+        {isSacrifice ? `-${formatCurrency(Math.abs(a))}` : formatCurrency(Math.abs(a))}
       </td>
       <td className={`p-4 text-right font-mono text-sm ${diff > 0 ? 'text-primary' : diff < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
         {diff !== 0 ? (diff > 0 ? '+' : '') + formatCurrency(diff) : '-'}

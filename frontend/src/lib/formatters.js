@@ -28,3 +28,12 @@ export function formatSalaryInput(value) {
 export function formatPercent(value, decimals = 0) {
   return `${Number(value).toFixed(decimals)}%`;
 }
+
+export function dv(annualValue, displayMode) {
+  if (displayMode === 'monthly') return annualValue / 12;
+  return annualValue;
+}
+
+export function dvLabel(displayMode) {
+  return displayMode === 'monthly' ? '/mo' : '/yr';
+}

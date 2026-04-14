@@ -8,16 +8,16 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, PiggyBank, Car, Bike, Baby, Laptop, HeartPulse, Info } from 'lucide-react';
 import { getMarginalTaxRate, getMarginalNIRate, getChildcareVoucherCap, calculateTotalSacrifice } from '@/lib/taxEngine';
-import { formatCurrency, parseSalaryInput } from '@/lib/formatters';
+import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
 
 export default function Step2Sacrifice() {
   const { state, dispatch } = useWizard();
-  const { step2 } = state;
+  const { step2, taxYear, displayMode } = state;
   const salary = parseSalaryInput(state.step1.grossSalary);
   const region = state.step1.taxRegion;
 
-  const marginalTax = getMarginalTaxRate(salary, region);
-  const marginalNI = getMarginalNIRate(salary);
+  const marginalTax = getMarginalTaxRate(salary, region, taxYear);
+  const marginalNI = getMarginalNIRate(salary, taxYear);
   const childcareCap = getChildcareVoucherCap(salary, region);
 
   const updateScheme = (scheme, data) => {
@@ -48,11 +48,11 @@ export default function Step2Sacrifice() {
           <div className="flex flex-wrap gap-6">
             <div>
               <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Total Sacrifice</p>
-              <p data-testid="total-sacrifice" className="font-mono text-lg font-medium">{formatCurrency(totals.totalAnnual)}/yr</p>
+              <p data-testid="total-sacrifice" className="font-mono text-lg font-medium">{formatCurrency(dv(totals.totalAnnual, displayMode))}{dvLabel(displayMode)}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Est. Tax Saved</p>
-              <p data-testid="est-tax-saved" className="font-mono text-lg font-medium text-primary">{formatCurrency(totals.totalSaved)}/yr</p>
+              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Est. Tax + NI Saved</p>
+              <p data-testid="est-tax-saved" className="font-mono text-lg font-medium text-primary">{formatCurrency(dv(totals.totalSaved, displayMode))}{dvLabel(displayMode)}</p>
             </div>
           </div>
         </div>

@@ -1,4 +1,7 @@
 import { useWizard } from '@/context/WizardContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { AVAILABLE_TAX_YEARS } from '@/lib/taxEngine';
 import Step1Situation from '@/pages/Step1Situation';
 import Step2Sacrifice from '@/pages/Step2Sacrifice';
 import Step3Comparison from '@/pages/Step3Comparison';
@@ -18,12 +21,53 @@ export default function WizardShell() {
     <div className="min-h-screen bg-background" data-testid="wizard-shell">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40 no-print">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-xl sm:text-2xl font-medium text-primary tracking-tight">
               Salary Sacrifice Optimiser
             </h1>
-            <p className="text-xs text-muted-foreground tracking-wide mt-0.5">UK Tax Year 2024/25</p>
+            <p className="text-xs text-muted-foreground tracking-wide mt-0.5">UK Tax Year {state.taxYear}</p>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Tax Year Selector */}
+            <Select
+              value={state.taxYear}
+              onValueChange={(v) => dispatch({ type: 'SET_TAX_YEAR', payload: v })}
+            >
+              <SelectTrigger data-testid="select-tax-year" className="w-[110px] h-8 rounded-sm text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AVAILABLE_TAX_YEARS.map((yr) => (
+                  <SelectItem key={yr} value={yr}>{yr}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Monthly / Annual Toggle */}
+            <div className="flex items-center rounded-sm border border-border overflow-hidden">
+              <button
+                data-testid="toggle-annual"
+                onClick={() => dispatch({ type: 'SET_DISPLAY_MODE', payload: 'annual' })}
+                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  state.displayMode === 'annual'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Annual
+              </button>
+              <button
+                data-testid="toggle-monthly"
+                onClick={() => dispatch({ type: 'SET_DISPLAY_MODE', payload: 'monthly' })}
+                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  state.displayMode === 'monthly'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Monthly
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -85,7 +129,7 @@ export default function WizardShell() {
           <p className="text-xs text-muted-foreground leading-relaxed">
             This calculator provides estimates for guidance only and does not constitute financial advice.
             Tax rules are subject to change. Always consult a qualified financial adviser before making
-            decisions about your salary, pension, or savings. Based on UK HMRC rates for tax year 2024/25.
+            decisions about your salary, pension, or savings. Based on UK HMRC rates for tax year {state.taxYear}.
           </p>
         </div>
       </footer>

@@ -4,6 +4,8 @@ const WizardContext = createContext(null);
 
 const initialState = {
   currentStep: 1,
+  taxYear: '2025/26',
+  displayMode: 'annual',
   step1: {
     grossSalary: '',
     taxRegion: 'england',
@@ -36,6 +38,10 @@ function wizardReducer(state, action) {
   switch (action.type) {
     case 'SET_STEP':
       return { ...state, currentStep: action.payload };
+    case 'SET_TAX_YEAR':
+      return { ...state, taxYear: action.payload };
+    case 'SET_DISPLAY_MODE':
+      return { ...state, displayMode: action.payload };
     case 'UPDATE_STEP1':
       return { ...state, step1: { ...state.step1, ...action.payload } };
     case 'UPDATE_STEP2_SCHEME':

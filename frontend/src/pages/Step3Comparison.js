@@ -11,18 +11,18 @@ import { ArrowLeft, ArrowRight, TrendingUp, Shield, Banknote, Gift, Layers } fro
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getMarginalTaxRate, getMarginalNIRate, TAX_CONSTANTS } from '@/lib/taxEngine';
 import { projectPension, projectISA, projectLISA, estimatePensionDrawdown, getEffectivePensionCost } from '@/lib/projectionEngine';
-import { formatCurrency, parseSalaryInput } from '@/lib/formatters';
+import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
 
 const CHART_COLORS = { pension: '#1E3F20', stocksISA: '#C19D60', cashISA: '#9CA3AF', lisa: '#1E293B', combined: '#6B21A8' };
 
 export default function Step3Comparison() {
   const { state, dispatch } = useWizard();
-  const { step3, step1 } = state;
+  const { step3, step1, taxYear, displayMode } = state;
   const salary = parseSalaryInput(step1.grossSalary);
   const age = parseInt(step1.age) || 30;
   const region = step1.taxRegion;
-  const marginalTax = getMarginalTaxRate(salary, region);
-  const marginalNI = getMarginalNIRate(salary);
+  const marginalTax = getMarginalTaxRate(salary, region, taxYear);
+  const marginalNI = getMarginalNIRate(salary, taxYear);
   const effectivePensionCost = getEffectivePensionCost(marginalTax, marginalNI);
   const showLISA = age >= 18 && age <= 39;
 

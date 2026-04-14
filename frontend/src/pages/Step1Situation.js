@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight, TrendingUp } from 'lucide-react';
 import { calculateIncomeTax, calculateEmployeeNI, calculateStudentLoan, getMarginalTaxRate } from '@/lib/taxEngine';
-import { formatCurrency, parseSalaryInput, formatSalaryInput } from '@/lib/formatters';
+import { formatCurrency, parseSalaryInput, formatSalaryInput, dv, dvLabel } from '@/lib/formatters';
 
 export default function Step1Situation() {
   const { state, dispatch } = useWizard();
-  const { step1 } = state;
+  const { step1, taxYear, displayMode } = state;
 
   const update = (field, value) => {
     dispatch({ type: 'UPDATE_STEP1', payload: { [field]: value } });
@@ -23,13 +23,13 @@ export default function Step1Situation() {
 
   const taxSummary = useMemo(() => {
     if (salary <= 0) return null;
-    const tax = calculateIncomeTax(salary, step1.taxRegion);
-    const ni = calculateEmployeeNI(salary);
-    const studentLoan = calculateStudentLoan(salary, step1.studentLoan);
+    const tax = calculateIncomeTax(salary, step1.taxRegion, taxYear);
+    const ni = calculateEmployeeNI(salary, taxYear);
+    const studentLoan = calculateStudentLoan(salary, step1.studentLoan, taxYear);
     const takeHome = salary - tax.totalTax - ni - studentLoan;
-    const marginalRate = getMarginalTaxRate(salary, step1.taxRegion);
+    const marginalRate = getMarginalTaxRate(salary, step1.taxRegion, taxYear);
     return { tax: tax.totalTax, ni, studentLoan, takeHome, marginalRate, pa: tax.personalAllowance };
-  }, [salary, step1.taxRegion, step1.studentLoan]);
+  }, [salary, step1.taxRegion, step1.studentLoan, taxYear]);
 
   return (
     <div className="space-y-8">
@@ -162,9 +162,9 @@ export default function Step1Situation() {
               </h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <SummaryItem label="Income Tax" value={formatCurrency(taxSummary.tax)} testId="preview-income-tax" />
-              <SummaryItem label="Employee NI" value={formatCurrency(taxSummary.ni)} testId="preview-ni" />
-              <SummaryItem label="Take-Home" value={formatCurrency(taxSummary.takeHome)} accent testId="preview-take-home" />
+              <SummaryItem label="Income Tax" value={formatCurrency(dv(taxSummary.tax, displayMode))} sub={dvLabel(displayMode)} testId="preview-income-tax" />
+              <SummaryItem label="Employee NI" value={formatCurrency(dv(taxSummary.ni, displayMode))} sub={dvLabel(displayMode)} testId="preview-ni" />
+              <SummaryItem label="Take-Home" value={formatCurrency(dv(taxSummary.takeHome, displayMode))} sub={dvLabel(displayMode)} accent testId="preview-take-home" />
               <SummaryItem label="Marginal Rate" value={`${(taxSummary.marginalRate * 100).toFixed(0)}%`} testId="preview-marginal-rate" />
             </div>
             {salary > 100000 && salary <= 125140 && (
@@ -195,12 +195,12 @@ export default function Step1Situation() {
   );
 }
 
-function SummaryItem({ label, value, accent, testId }) {
+function SummaryItem({ label, value, sub, accent, testId }) {
   return (
     <div>
       <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground mb-1">{label}</p>
       <p data-testid={testId} className={`font-mono text-lg font-medium ${accent ? 'text-primary' : 'text-foreground'}`}>
-        {value}
+        {value}{sub && <span className="text-xs text-muted-foreground ml-0.5">{sub}</span>}
       </p>
     </div>
   );
