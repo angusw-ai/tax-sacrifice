@@ -55,7 +55,7 @@ export default function Step3Comparison() {
       results.lisa = projectLISA(lisaMonthly, step3.growthRate, step3.horizon, 0, age);
     }
     return results;
-  }, [step3, salary, age, showLISA]);
+  }, [step3, age, showLISA]);
 
   // Build chart data
   const chartData = useMemo(() => {
@@ -324,8 +324,8 @@ export default function Step3Comparison() {
               <CardTitle className="font-serif text-lg font-medium">Projected Growth Over {step3.horizon} Years</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[350px] sm:h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[350px] sm:h-[400px]" style={{ minWidth: 0, minHeight: 300 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200} debounce={100}>
                   <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                     <XAxis
                       dataKey="year"

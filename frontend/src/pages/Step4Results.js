@@ -261,8 +261,8 @@ export default function Step4Results() {
             <CardTitle className="font-serif text-lg font-medium">Salary Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[300px]" style={{ minWidth: 0, minHeight: 200 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200} debounce={100}>
                 <BarChart data={barData} barGap={8} margin={{ top: 10, right: 10, bottom: 5, left: 10 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 12, fontFamily: "'IBM Plex Sans'" }} tickLine={false} axisLine={{ stroke: '#E5E0D8' }} />
                   <YAxis tick={{ fontSize: 11, fontFamily: "'IBM Plex Mono'" }} tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={55} />
@@ -285,8 +285,8 @@ export default function Step4Results() {
             <CardTitle className="font-serif text-lg font-medium">Where Your Money Goes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[300px]" style={{ minWidth: 0, minHeight: 200 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200} debounce={100}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -320,8 +320,8 @@ export default function Step4Results() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[350px]" style={{ minWidth: 0, minHeight: 200 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200} debounce={100}>
                 <LineChart data={projChartData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <XAxis dataKey="year" tick={{ fontSize: 11, fontFamily: "'IBM Plex Mono'" }} tickLine={false} axisLine={{ stroke: '#E5E0D8' }} />
                   <YAxis tick={{ fontSize: 11, fontFamily: "'IBM Plex Mono'" }} tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={60} />
