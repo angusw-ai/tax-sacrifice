@@ -25,7 +25,10 @@ UK employees, particularly higher/additional rate taxpayers, wanting to optimise
 
 ## What's Been Implemented (April 2026)
 - [x] Full 4-step wizard with state management (React Context)
-- [x] Complete UK tax engine (2024/25 bands, PA taper, NI, student loans)
+- [x] Complete UK tax engine (PA taper, NI, student loans)
+- [x] **2024/25 AND 2025/26 tax year support** with dropdown selector
+- [x] **Monthly/Annual toggle** throughout the entire wizard
+- [x] 2025/26 updates: Employer NI 15% @ £5k, Scotland bands expanded, Student loan thresholds updated
 - [x] All 6 salary sacrifice schemes with real-time savings
 - [x] Pension vs ISA comparison with simple/advanced views
 - [x] Recharts charts (stacked bar, pie, line projections)
@@ -42,8 +45,8 @@ UK employees, particularly higher/additional rate taxpayers, wanting to optimise
 - Charts and visualizations
 
 ### P1 (Next)
-- Monthly/annual toggle throughout
 - Shareable link generation
+- Scenario comparison (save multiple configurations side-by-side)
 - Improve chart responsiveness during tab transitions
 
 ### P2 (Future)
