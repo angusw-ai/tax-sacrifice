@@ -24,19 +24,25 @@ UK employees, particularly higher/additional rate taxpayers, wanting to optimise
 9. Print-to-PDF via browser
 
 ## What's Been Implemented (April 2026)
-- [x] Full 4-step wizard with state management (React Context)
+- [x] Full 5-step wizard with state management (React Context)
 - [x] Complete UK tax engine (PA taper, NI, student loans)
-- [x] **2024/25 AND 2025/26 tax year support** with dropdown selector
-- [x] **Monthly/Annual toggle** throughout the entire wizard
-- [x] 2025/26 updates: Employer NI 15% @ £5k, Scotland bands expanded, Student loan thresholds updated
+- [x] 2024/25 AND 2025/26 tax year support with dropdown selector
+- [x] Monthly/Annual toggle throughout the entire wizard
+- [x] **Bonus Sacrifice Calculator** (Step 3) — model cash vs sacrifice with threshold warnings
+- [x] **Children & Childcare** — Tax-Free Childcare (£2k/child) and 30 Free Hours modelling with £100k cliff-edge warning
+- [x] **Mortgage Impact Warning** — gross vs post-sacrifice borrowing capacity with lender-specific advice
+- [x] **Pension Carry Forward** — 3-year unused allowance calculator
+- [x] **2029 NI Cap Impact** — current vs post-2029 NI savings comparison
+- [x] **Adjusted Net Income Banner** — persistent real-time indicator with colour-coded threshold warnings (£60k, £80k, £100k, £125,140)
+- [x] **Employer NI Pass-back Toggle** — models employer rebating their NI saving
+- [x] **Statutory Pay Warning** — flags risk to SMP/SPP and state pension
 - [x] All 6 salary sacrifice schemes with real-time savings
 - [x] Pension vs ISA comparison with simple/advanced views
 - [x] Recharts charts (stacked bar, pie, line projections)
 - [x] Smart insights engine (60% trap, HICBC, annual allowance warnings)
-- [x] Old Money aesthetic (Cormorant Garamond, IBM Plex, Heritage Green/Brass)
+- [x] Old Money aesthetic
 - [x] Print-to-PDF via window.print()
-- [x] Mobile responsive
-- [x] data-testid attributes on all interactive elements
+- [x] Mobile responsive + data-testid attributes
 
 ## Prioritized Backlog
 ### P0 (Done)
