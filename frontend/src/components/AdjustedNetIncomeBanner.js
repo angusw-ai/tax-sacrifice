@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useWizard } from '@/context/WizardContext';
 import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
+import { calculateTotalSacrifice } from '@/lib/taxEngine';
 
 const THRESHOLDS = [
   { value: 60000, label: '£60k HICBC', color: 'text-amber-600', bg: 'bg-amber-500' },
@@ -16,18 +17,7 @@ export default function AdjustedNetIncomeBanner() {
 
   const ani = useMemo(() => {
     if (salary <= 0) return null;
-    let totalSacrifice = 0;
-    const s = state.step2;
-    if (s.pension?.enabled) {
-      totalSacrifice += s.pension.inputType === 'percentage'
-        ? salary * ((s.pension.value || 0) / 100)
-        : (s.pension.value || 0) * 12;
-    }
-    if (s.ev?.enabled) totalSacrifice += (s.ev.monthlyCost || 0) * 12;
-    if (s.cycle?.enabled) totalSacrifice += Math.min(s.cycle.value || 0, s.cycle.cap || 1000);
-    if (s.childcare?.enabled) totalSacrifice += (s.childcare.monthlyAmount || 0) * 12;
-    if (s.tech?.enabled) totalSacrifice += Math.min(s.tech.value || 0, 3000);
-    if (s.healthcare?.enabled) totalSacrifice += (s.healthcare.monthlyPremium || 0) * 12;
+    const { totalAnnual: totalSacrifice } = calculateTotalSacrifice(salary, state.step2);
 
     const bonusAmount = parseSalaryInput(state.bonus.amount);
     const bonusSacrifice = bonusAmount * ((state.bonus.sacrificePct || 0) / 100);
@@ -40,13 +30,11 @@ export default function AdjustedNetIncomeBanner() {
 
   const { adjusted } = ani;
   let statusColor = 'text-primary';
-  let barColor = 'bg-primary';
   let activeWarning = null;
 
   for (let i = THRESHOLDS.length - 1; i >= 0; i--) {
     if (adjusted > THRESHOLDS[i].value) {
       statusColor = THRESHOLDS[i].color;
-      barColor = THRESHOLDS[i].bg;
       activeWarning = THRESHOLDS[i].label;
       break;
     }
