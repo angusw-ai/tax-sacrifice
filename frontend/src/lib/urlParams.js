@@ -1,5 +1,14 @@
 // URL parameter encoding/decoding for shareable results
 
+const PENSION_METHOD_PARAM_MAP = {
+  relief: 'relief',
+  netpay: 'salary-sacrifice',
+};
+
+function decodePensionMethod(value) {
+  return value === 'relief' ? 'relief' : 'netpay';
+}
+
 const PARAM_MAP = {
   salary: { path: 'step1.grossSalary' },
   region: { path: 'step1.taxRegion' },
@@ -63,6 +72,7 @@ export function encodeStateToURL(state) {
     } else {
       params.set('pensionFixed', s.pension.value);
     }
+    params.set('pensionMethod', PENSION_METHOD_PARAM_MAP[s.pension.method] || 'salary-sacrifice');
   }
   if (s.ev.enabled) {
     params.set('ev', s.ev.monthlyCost);
@@ -113,11 +123,12 @@ export function decodeURLToState(searchString) {
 
   // Step 2 - Schemes
   overrides.step2 = {};
+  const pensionMethod = decodePensionMethod(params.get('pensionMethod'));
   if (params.has('pension')) {
-    overrides.step2.pension = { enabled: true, inputType: 'percentage', value: parseFloat(params.get('pension')) || 5, method: 'netpay' };
+    overrides.step2.pension = { enabled: true, inputType: 'percentage', value: parseFloat(params.get('pension')) || 5, method: pensionMethod };
   }
   if (params.has('pensionFixed')) {
-    overrides.step2.pension = { enabled: true, inputType: 'fixed', value: parseFloat(params.get('pensionFixed')) || 500, method: 'netpay' };
+    overrides.step2.pension = { enabled: true, inputType: 'fixed', value: parseFloat(params.get('pensionFixed')) || 500, method: pensionMethod };
   }
   if (params.has('ev')) {
     overrides.step2.ev = { enabled: true, monthlyCost: parseFloat(params.get('ev')) || 300, listPrice: parseFloat(params.get('evPrice')) || 40000 };
