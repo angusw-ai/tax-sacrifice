@@ -165,6 +165,19 @@ export function calculateStudentLoan(income, plan, taxYear) {
   return (income - config.threshold) * config.rate;
 }
 
+export function calculateTotalStudentLoan(income, plan, hasPostgraduateLoan = false, taxYear) {
+  const mainPlanRepayment = calculateStudentLoan(income, plan, taxYear);
+  const postgraduateRepayment = hasPostgraduateLoan
+    ? calculateStudentLoan(income, 'postgrad', taxYear)
+    : 0;
+
+  return {
+    mainPlanRepayment,
+    postgraduateRepayment,
+    total: mainPlanRepayment + postgraduateRepayment,
+  };
+}
+
 export function getMarginalTaxRate(income, region, taxYear) {
   const c = getConstants(taxYear);
   if (income > c.PA_TAPER_START && income <= c.PA_TAPER_END) {
@@ -281,7 +294,7 @@ export function calculateTotalSacrifice(salary, schemes) {
   return { totalAnnual, bikValue, details };
 }
 
-export function calculateFullBreakdown(salary, region, studentLoan, schemes, employerPensionPct = 0, taxYear) {
+export function calculateFullBreakdown(salary, region, studentLoan, hasPostgraduateLoan, schemes, employerPensionPct = 0, taxYear) {
   const { totalAnnual, bikValue, details } = calculateTotalSacrifice(salary, schemes);
   const pensionDetails = details.pension || calculatePensionContribution(salary, schemes.pension);
 
@@ -289,7 +302,7 @@ export function calculateFullBreakdown(salary, region, studentLoan, schemes, emp
   const beforeTax = calculateIncomeTax(salary, region, taxYear);
   const beforeNI = calculateEmployeeNI(salary, taxYear);
   const beforeEmployerNI = calculateEmployerNI(salary, taxYear);
-  const beforeStudentLoan = calculateStudentLoan(salary, studentLoan, taxYear);
+  const beforeStudentLoan = calculateTotalStudentLoan(salary, studentLoan, hasPostgraduateLoan, taxYear).total;
   const beforeTakeHome = salary - beforeTax.totalTax - beforeNI - beforeStudentLoan;
 
   // After sacrifice
@@ -298,7 +311,7 @@ export function calculateFullBreakdown(salary, region, studentLoan, schemes, emp
   const afterTax = calculateIncomeTax(taxableIncome, region, taxYear);
   const afterNI = calculateEmployeeNI(adjustedSalary, taxYear);
   const afterEmployerNI = calculateEmployerNI(adjustedSalary, taxYear);
-  const afterStudentLoan = calculateStudentLoan(adjustedSalary, studentLoan, taxYear);
+  const afterStudentLoan = calculateTotalStudentLoan(adjustedSalary, studentLoan, hasPostgraduateLoan, taxYear).total;
   const postTaxDeductions = pensionDetails.method === 'relief' ? pensionDetails.netContribution : 0;
   const afterTakeHome = adjustedSalary - afterTax.totalTax - afterNI - afterStudentLoan - postTaxDeductions;
 
@@ -350,28 +363,28 @@ export function calculateFullBreakdown(salary, region, studentLoan, schemes, emp
 
 
 // ===== BONUS SACRIFICE CALCULATOR =====
-export function calculateBonusTaxation(salary, bonus, region, studentLoan, sacrificeAmount, taxYear) {
+export function calculateBonusTaxation(salary, bonus, region, studentLoan, hasPostgraduateLoan, sacrificeAmount, taxYear) {
   if (!bonus || bonus <= 0) return null;
   const safeS = Math.min(sacrificeAmount || 0, bonus);
 
   // Base: salary only
   const baseTax = calculateIncomeTax(salary, region, taxYear);
   const baseNI = calculateEmployeeNI(salary, taxYear);
-  const baseSL = calculateStudentLoan(salary, studentLoan, taxYear);
+  const baseSL = calculateTotalStudentLoan(salary, studentLoan, hasPostgraduateLoan, taxYear).total;
   const baseTakeHome = salary - baseTax.totalTax - baseNI - baseSL;
 
   // Scenario A: full bonus as cash
   const totalCash = salary + bonus;
   const cashTax = calculateIncomeTax(totalCash, region, taxYear);
   const cashNI = calculateEmployeeNI(totalCash, taxYear);
-  const cashSL = calculateStudentLoan(totalCash, studentLoan, taxYear);
+  const cashSL = calculateTotalStudentLoan(totalCash, studentLoan, hasPostgraduateLoan, taxYear).total;
   const cashTakeHome = totalCash - cashTax.totalTax - cashNI - cashSL;
 
   // Scenario B: sacrifice portion
   const totalAfter = salary + bonus - safeS;
   const afterTax = calculateIncomeTax(totalAfter, region, taxYear);
   const afterNI = calculateEmployeeNI(totalAfter, taxYear);
-  const afterSL = calculateStudentLoan(totalAfter, studentLoan, taxYear);
+  const afterSL = calculateTotalStudentLoan(totalAfter, studentLoan, hasPostgraduateLoan, taxYear).total;
   const afterTakeHome = totalAfter - afterTax.totalTax - afterNI - afterSL;
 
   const bonusTaxAsCash = cashTax.totalTax - baseTax.totalTax;

@@ -3,7 +3,7 @@ import { decodeURLToState } from '@/lib/urlParams';
 
 const WizardContext = createContext(null);
 const VALID_REGIONS = new Set(['england', 'scotland']);
-const VALID_STUDENT_LOANS = new Set(['none', 'plan1', 'plan2', 'plan4', 'postgrad']);
+const VALID_STUDENT_LOANS = new Set(['none', 'plan1', 'plan2', 'plan4']);
 const VALID_TAX_YEARS = new Set(['2024/25', '2025/26']);
 const VALID_PENSION_INPUT_TYPES = new Set(['percentage', 'fixed']);
 const VALID_PENSION_METHODS = new Set(['netpay', 'relief']);
@@ -33,6 +33,7 @@ function isValidHydratedState(payload, rawSearch = '') {
   if (params.has('region') && !VALID_REGIONS.has(params.get('region'))) return false;
   if (params.has('age') && !isIntegerInRange(parseInt(params.get('age'), 10), 16, 75)) return false;
   if (params.has('loan') && !VALID_STUDENT_LOANS.has(params.get('loan'))) return false;
+  if (params.has('postgrad') && params.get('postgrad') !== '1') return false;
   if (params.has('empPension')) {
     const employerPensionPct = Number(params.get('empPension'));
     if (!isNonNegativeNumber(employerPensionPct) || employerPensionPct > 100) return false;
@@ -100,6 +101,7 @@ const initialState = {
     grossSalary: '',
     taxRegion: 'england',
     studentLoan: 'none',
+    hasPostgraduateLoan: false,
     employerPensionPct: '',
     age: '',
     hasChildren: false,

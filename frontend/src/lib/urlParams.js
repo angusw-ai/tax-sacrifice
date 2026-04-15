@@ -56,6 +56,7 @@ export function encodeStateToURL(state) {
   if (state.step1.taxRegion !== 'england') params.set('region', state.step1.taxRegion);
   if (state.step1.age) params.set('age', state.step1.age);
   if (state.step1.studentLoan !== 'none') params.set('loan', state.step1.studentLoan);
+  if (state.step1.hasPostgraduateLoan) params.set('postgrad', '1');
   if (state.step1.employerPensionPct) params.set('empPension', state.step1.employerPensionPct);
 
   // Children
@@ -124,6 +125,7 @@ export function decodeURLToState(searchString) {
   if (params.has('region')) overrides.step1.taxRegion = params.get('region');
   if (params.has('age')) overrides.step1.age = params.get('age');
   if (params.has('loan')) overrides.step1.studentLoan = params.get('loan');
+  if (params.get('postgrad') === '1') overrides.step1.hasPostgraduateLoan = true;
   if (params.has('empPension')) overrides.step1.employerPensionPct = params.get('empPension');
 
   // Children

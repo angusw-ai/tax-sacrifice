@@ -42,8 +42,8 @@ export default function Step4Results() {
 
   const breakdown = useMemo(() => {
     if (salary <= 0) return null;
-    return calculateFullBreakdown(salary, region, step1.studentLoan, step2, employerPct, taxYear);
-  }, [salary, region, step1.studentLoan, step2, employerPct, taxYear]);
+    return calculateFullBreakdown(salary, region, step1.studentLoan, step1.hasPostgraduateLoan, step2, employerPct, taxYear);
+  }, [salary, region, step1.studentLoan, step1.hasPostgraduateLoan, step2, employerPct, taxYear]);
 
   const insights = useMemo(() => {
     if (!breakdown) return [];
@@ -72,7 +72,7 @@ export default function Step4Results() {
     const savedScenarios = state.bonus.savedScenarios || [];
     const currentSacrificeAmount = bonusAmount * ((state.bonus.sacrificePct || 0) / 100);
     const currentScenario = bonusAmount > 0
-      ? calculateBonusTaxation(salary, bonusAmount, region, step1.studentLoan, currentSacrificeAmount, taxYear)
+      ? calculateBonusTaxation(salary, bonusAmount, region, step1.studentLoan, step1.hasPostgraduateLoan, currentSacrificeAmount, taxYear)
       : null;
 
     const recalculatedSavedScenarios = savedScenarios.map((scenario) => {
@@ -83,6 +83,7 @@ export default function Step4Results() {
         scenarioBonusAmount,
         region,
         step1.studentLoan,
+        step1.hasPostgraduateLoan,
         scenarioSacrificeAmount,
         taxYear,
       );
@@ -107,7 +108,7 @@ export default function Step4Results() {
       currentScenario,
       recalculatedSavedScenarios,
     };
-  }, [bonusAmount, region, salary, state.bonus, step1.studentLoan, taxYear]);
+  }, [bonusAmount, region, salary, state.bonus, step1.studentLoan, step1.hasPostgraduateLoan, taxYear]);
 
   const [copied, setCopied] = useState(false);
   const [manualShareURL, setManualShareURL] = useState('');

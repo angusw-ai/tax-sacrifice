@@ -28,12 +28,12 @@ export default function Step2Sacrifice() {
   const totals = useMemo(() => {
     const { totalAnnual } = calculateTotalSacrifice(salary, step2);
     const breakdown = salary > 0
-      ? calculateFullBreakdown(salary, region, state.step1.studentLoan, step2, parseFloat(state.step1.employerPensionPct) || 0, taxYear)
+      ? calculateFullBreakdown(salary, region, state.step1.studentLoan, state.step1.hasPostgraduateLoan, step2, parseFloat(state.step1.employerPensionPct) || 0, taxYear)
       : null;
     const estTaxSaved = breakdown ? breakdown.savings.taxSaved : 0;
     const estNISaved = breakdown ? breakdown.savings.niSaved : 0;
     return { totalAnnual, estTaxSaved, estNISaved, totalSaved: estTaxSaved + estNISaved };
-  }, [salary, step2, region, state.step1.studentLoan, state.step1.employerPensionPct, taxYear]);
+  }, [salary, step2, region, state.step1.studentLoan, state.step1.hasPostgraduateLoan, state.step1.employerPensionPct, taxYear]);
 
   const pensionPreview = useMemo(() => calculatePensionContribution(salary, step2.pension), [salary, step2.pension]);
 

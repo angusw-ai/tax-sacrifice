@@ -50,8 +50,8 @@ export default function StepBonusSacrifice() {
 
   const result = useMemo(() => {
     if (salary <= 0 || bonusAmt <= 0) return null;
-    return calculateBonusTaxation(salary, bonusAmt, step1.taxRegion, step1.studentLoan, sacrificeAmt, taxYear);
-  }, [salary, bonusAmt, step1.taxRegion, step1.studentLoan, sacrificeAmt, taxYear]);
+    return calculateBonusTaxation(salary, bonusAmt, step1.taxRegion, step1.studentLoan, step1.hasPostgraduateLoan, sacrificeAmt, taxYear);
+  }, [salary, bonusAmt, step1.taxRegion, step1.studentLoan, step1.hasPostgraduateLoan, sacrificeAmt, taxYear]);
 
   const mostEfficientScenarioId = useMemo(() => {
     if (savedScenarios.length < 2) return null;

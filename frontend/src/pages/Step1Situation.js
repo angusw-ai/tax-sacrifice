@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ArrowRight, TrendingUp, Baby } from 'lucide-react';
-import { calculateIncomeTax, calculateEmployeeNI, calculateStudentLoan, getMarginalTaxRate } from '@/lib/taxEngine';
+import { calculateIncomeTax, calculateEmployeeNI, calculateTotalStudentLoan, getMarginalTaxRate } from '@/lib/taxEngine';
 import { formatCurrency, parseSalaryInput, formatSalaryInput, normalizeIntegerInput, normalizeFloatInput, dv, dvLabel } from '@/lib/formatters';
 
 export default function Step1Situation() {
@@ -26,11 +26,11 @@ export default function Step1Situation() {
     if (salary <= 0) return null;
     const tax = calculateIncomeTax(salary, step1.taxRegion, taxYear);
     const ni = calculateEmployeeNI(salary, taxYear);
-    const studentLoan = calculateStudentLoan(salary, step1.studentLoan, taxYear);
+    const studentLoan = calculateTotalStudentLoan(salary, step1.studentLoan, step1.hasPostgraduateLoan, taxYear).total;
     const takeHome = salary - tax.totalTax - ni - studentLoan;
     const marginalRate = getMarginalTaxRate(salary, step1.taxRegion, taxYear);
     return { tax: tax.totalTax, ni, studentLoan, takeHome, marginalRate, pa: tax.personalAllowance };
-  }, [salary, step1.taxRegion, step1.studentLoan, taxYear]);
+  }, [salary, step1.taxRegion, step1.studentLoan, step1.hasPostgraduateLoan, taxYear]);
 
   return (
     <div className="space-y-8">
@@ -103,9 +103,19 @@ export default function Step1Situation() {
                   <SelectItem value="plan1">Plan 1</SelectItem>
                   <SelectItem value="plan2">Plan 2</SelectItem>
                   <SelectItem value="plan4">Plan 4</SelectItem>
-                  <SelectItem value="postgrad">Postgraduate</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex items-center justify-between rounded-sm border border-border px-3 py-2.5 mt-2">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Postgraduate Loan</p>
+                  <p className="text-xs text-muted-foreground">6% on earnings above £21,000 and can apply alongside another plan.</p>
+                </div>
+                <Switch
+                  data-testid="toggle-postgraduate-loan"
+                  checked={step1.hasPostgraduateLoan}
+                  onCheckedChange={(v) => update('hasPostgraduateLoan', v)}
+                />
+              </div>
             </div>
 
             {/* Age */}
