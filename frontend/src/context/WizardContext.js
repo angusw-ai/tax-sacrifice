@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
+import { decodeURLToState } from '@/lib/urlParams';
 
 const WizardContext = createContext(null);
 
@@ -93,6 +94,21 @@ function wizardReducer(state, action) {
           splits: { ...state.step3.splits, ...action.payload },
         },
       };
+    case 'HYDRATE': {
+      const p = action.payload;
+      const next = { ...state, currentStep: 5 };
+      if (p.step1) next.step1 = { ...state.step1, ...p.step1 };
+      if (p.step2) {
+        next.step2 = { ...state.step2 };
+        for (const [k, v] of Object.entries(p.step2)) {
+          next.step2[k] = { ...state.step2[k], ...v };
+        }
+      }
+      if (p.bonus) next.bonus = { ...state.bonus, ...p.bonus };
+      if (p.taxYear) next.taxYear = p.taxYear;
+      if (p.employerNIPassback !== undefined) next.employerNIPassback = p.employerNIPassback;
+      return next;
+    }
     default:
       return state;
   }
@@ -100,6 +116,19 @@ function wizardReducer(state, action) {
 
 export function WizardProvider({ children }) {
   const [state, dispatch] = useReducer(wizardReducer, initialState);
+  const hydrated = useRef(false);
+
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+    const overrides = decodeURLToState(window.location.search);
+    if (overrides) {
+      dispatch({ type: 'HYDRATE', payload: overrides });
+      // Clean URL without reloading
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   return (
     <WizardContext.Provider value={{ state, dispatch }}>
       {children}

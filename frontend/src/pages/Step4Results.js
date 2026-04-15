@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useWizard } from '@/context/WizardContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Printer, AlertTriangle, Lightbulb, CheckCircle2, Info, TrendingUp, Home, Baby } from 'lucide-react';
+import { ArrowLeft, Printer, AlertTriangle, Lightbulb, CheckCircle2, Info, TrendingUp, Home, Baby, Link2, Check } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
@@ -16,6 +16,7 @@ import {
 import { projectPension, projectISA, projectLISA, estimatePensionDrawdown } from '@/lib/projectionEngine';
 import { generateInsights } from '@/lib/insightsEngine';
 import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
+import { buildShareURL } from '@/lib/urlParams';
 
 const COLORS = {
   takeHome: '#1E3F20',
@@ -65,6 +66,31 @@ export default function Step4Results() {
     }
     return results;
   }, [step3, age]);
+
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = () => {
+    const url = buildShareURL(state);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }).catch(() => fallbackCopy(url));
+    } else {
+      fallbackCopy(url);
+    }
+  };
+
+  const fallbackCopy = (text) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch (e) { window.prompt('Copy this link:', text); }
+    document.body.removeChild(ta);
+  };
 
   if (!breakdown) {
     return (
@@ -135,15 +161,26 @@ export default function Step4Results() {
             Complete breakdown of your salary sacrifice and savings strategy.
           </p>
         </div>
-        <Button
-          data-testid="btn-print-pdf"
-          variant="outline"
-          onClick={() => window.print()}
-          className="rounded-sm hidden sm:flex items-center gap-2 no-print"
-        >
-          <Printer className="w-4 h-4" />
-          Export to PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            data-testid="btn-share-results"
+            variant="outline"
+            onClick={handleShare}
+            className="rounded-sm hidden sm:flex items-center gap-2 no-print"
+          >
+            {copied ? <Check className="w-4 h-4 text-primary" /> : <Link2 className="w-4 h-4" />}
+            {copied ? 'Copied!' : 'Share Results'}
+          </Button>
+          <Button
+            data-testid="btn-print-pdf"
+            variant="outline"
+            onClick={() => window.print()}
+            className="rounded-sm hidden sm:flex items-center gap-2 no-print"
+          >
+            <Printer className="w-4 h-4" />
+            Export to PDF
+          </Button>
+        </div>
       </div>
 
       {/* Quick Toggles */}
@@ -487,14 +524,25 @@ export default function Step4Results() {
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
-        <Button
-          data-testid="btn-print-pdf-bottom"
-          onClick={() => window.print()}
-          className="rounded-sm px-8 py-6 text-sm uppercase tracking-wider font-semibold"
-        >
-          <Printer className="w-4 h-4 mr-2" />
-          Export to PDF
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            data-testid="btn-share-results-bottom"
+            variant="outline"
+            onClick={handleShare}
+            className="rounded-sm px-6 py-6 text-sm"
+          >
+            {copied ? <Check className="w-4 h-4 mr-2 text-primary" /> : <Link2 className="w-4 h-4 mr-2" />}
+            {copied ? 'Copied!' : 'Share'}
+          </Button>
+          <Button
+            data-testid="btn-print-pdf-bottom"
+            onClick={() => window.print()}
+            className="rounded-sm px-8 py-6 text-sm uppercase tracking-wider font-semibold"
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            Export to PDF
+          </Button>
+        </div>
       </div>
     </div>
   );
