@@ -405,15 +405,15 @@ export function calculateBonusTaxation(salary, bonus, region, studentLoan, sacri
 }
 
 // ===== CHILDCARE ENTITLEMENTS =====
-export function calculateChildcareEntitlements(adjustedIncome, numChildren, childAges) {
+export function calculateChildcareEntitlements(adjustedIncome, numChildren, childAges, monthlyCostPerChild = 0) {
   const TFC_PER_CHILD = 2000;
-  const FREE_HOURS_MONTHLY = 300;
   let tfcValue = 0;
   let freeHoursValue = 0;
+  const annualFreeHoursValuePerChild = Math.max(0, monthlyCostPerChild) * 12;
   for (let i = 0; i < numChildren; i++) {
     const age = (childAges && childAges[i]) || 3;
     if (age < 12) tfcValue += TFC_PER_CHILD;
-    if (age >= 2 && age <= 4) freeHoursValue += FREE_HOURS_MONTHLY * 12;
+    if (age >= 2 && age <= 4) freeHoursValue += annualFreeHoursValuePerChild;
   }
   const eligible = adjustedIncome < 100000;
   const totalValue = eligible ? tfcValue + freeHoursValue : 0;

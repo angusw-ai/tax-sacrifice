@@ -445,8 +445,9 @@ export default function Step4Results() {
       {/* Childcare Impact Section */}
       {step1.hasChildren && (() => {
         const childAges = (step1.childAges || '3').split(',').map(a => parseInt(a.trim()) || 3);
-        const childcare = calculateChildcareEntitlements(after.adjustedSalary, step1.numberOfChildren || 1, childAges);
-        const childcareBefore = calculateChildcareEntitlements(salary, step1.numberOfChildren || 1, childAges);
+        const monthlyCostPerChild = parseFloat(step1.monthlyCostPerChild) || 0;
+        const childcare = calculateChildcareEntitlements(after.adjustedSalary, step1.numberOfChildren || 1, childAges, monthlyCostPerChild);
+        const childcareBefore = calculateChildcareEntitlements(salary, step1.numberOfChildren || 1, childAges, monthlyCostPerChild);
         if (childcareBefore.totalAtRisk <= 0) return null;
         return (
           <Card className="rounded-sm border-2 border-amber-200 bg-amber-50/50 shadow-sm" data-testid="childcare-impact">
