@@ -65,6 +65,9 @@ export default function Step3Comparison() {
   const marginalNI = getMarginalNIRate(salary, taxYear);
   const effectivePensionCost = getEffectivePensionCost(marginalTax, marginalNI);
   const showLISA = age >= 18 && age <= 39;
+  const pensionVehicleLabel = step3 && state.step2.pension.method === 'relief'
+    ? 'Pension (Relief at Source)'
+    : 'Pension (Salary Sacrifice)';
 
   const update = (payload) => dispatch({ type: 'UPDATE_STEP3', payload });
   const updateSplit = (payload) => dispatch({ type: 'UPDATE_STEP3_SPLITS', payload });
@@ -269,7 +272,7 @@ export default function Step3Comparison() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <VehicleToggle
             icon={TrendingUp}
-            label="Pension (Salary Sacrifice)"
+            label={pensionVehicleLabel}
             testId="toggle-vehicle-pension"
             active={step3.vehicles.pension}
             onToggle={(v) => toggleVehicle('pension', v)}
