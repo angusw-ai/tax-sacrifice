@@ -11,7 +11,7 @@ import {
 import {
   calculateFullBreakdown, calculateIncomeTax, calculateEmployeeNI,
   getMarginalTaxRate, getMarginalNIRate, TAX_CONSTANTS,
-  calculateChildcareEntitlements, calculateMortgageCapacity, calculateTotalSacrifice, getConstants
+  calculateChildcareEntitlements, calculateMortgageCapacity, calculateTotalSacrifice, getConstants, calculateBonusTaxation
 } from '@/lib/taxEngine';
 import { projectPension, projectISA, projectLISA, estimatePensionDrawdown } from '@/lib/projectionEngine';
 import { generateInsights } from '@/lib/insightsEngine';
@@ -38,6 +38,7 @@ export default function Step4Results() {
   const age = parseInt(step1.age) || 30;
   const employerPct = parseFloat(step1.employerPensionPct) || 0;
   const dm = displayMode;
+  const bonusAmount = parseSalaryInput(state.bonus.amount);
 
   const breakdown = useMemo(() => {
     if (salary <= 0) return null;
@@ -66,6 +67,47 @@ export default function Step4Results() {
     }
     return results;
   }, [step3, age]);
+
+  const bonusSummary = useMemo(() => {
+    const savedScenarios = state.bonus.savedScenarios || [];
+    const currentSacrificeAmount = bonusAmount * ((state.bonus.sacrificePct || 0) / 100);
+    const currentScenario = bonusAmount > 0
+      ? calculateBonusTaxation(salary, bonusAmount, region, step1.studentLoan, currentSacrificeAmount, taxYear)
+      : null;
+
+    const recalculatedSavedScenarios = savedScenarios.map((scenario) => {
+      const scenarioBonusAmount = parseSalaryInput(scenario.bonusAmount);
+      const scenarioSacrificeAmount = scenarioBonusAmount * ((scenario.sacrificePct || 0) / 100);
+      const result = calculateBonusTaxation(
+        salary,
+        scenarioBonusAmount,
+        region,
+        step1.studentLoan,
+        scenarioSacrificeAmount,
+        taxYear,
+      );
+
+      if (!result) return null;
+
+      return {
+        id: scenario.id,
+        name: scenario.name,
+        bonusAmount: scenarioBonusAmount,
+        sacrificePct: scenario.sacrificePct,
+        pensionIn: result.afterSacrifice.pensionIn,
+        netCash: result.afterSacrifice.net,
+        taxSaved: result.saved.tax,
+        niSaved: result.saved.ni,
+        totalSaved: result.saved.total,
+        adjustedNetIncome: result.adjustedAfterSacrifice,
+      };
+    }).filter(Boolean);
+
+    return {
+      currentScenario,
+      recalculatedSavedScenarios,
+    };
+  }, [bonusAmount, region, salary, state.bonus, step1.studentLoan, taxYear]);
 
   const [copied, setCopied] = useState(false);
   const [manualShareURL, setManualShareURL] = useState('');
@@ -497,6 +539,83 @@ export default function Step4Results() {
           </div>
         </CardContent>
       </Card>
+
+      {(bonusSummary.currentScenario || bonusSummary.recalculatedSavedScenarios.length > 0) && (
+        <Card className="rounded-sm border shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="font-serif text-lg font-medium">Bonus Sacrifice Summary</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Updated from your latest Bonus step inputs and saved scenarios.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {bonusSummary.currentScenario && (
+              <div className="rounded-sm border border-primary/10 bg-primary/[0.03] p-4">
+                <p className="text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground mb-2">
+                  Current bonus strategy
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Gross bonus</p>
+                    <p className="font-mono font-medium">{formatCurrency(bonusAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Into pension</p>
+                    <p className="font-mono font-medium text-primary">{formatCurrency(bonusSummary.currentScenario.afterSacrifice.pensionIn)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Net cash received</p>
+                    <p className="font-mono font-medium">{formatCurrency(bonusSummary.currentScenario.afterSacrifice.net)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Tax + NI saved</p>
+                    <p className="font-mono font-medium">{formatCurrency(bonusSummary.currentScenario.saved.total)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {bonusSummary.recalculatedSavedScenarios.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground">
+                  Saved scenarios
+                </p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {bonusSummary.recalculatedSavedScenarios.map((scenario) => (
+                    <div key={scenario.id} className="rounded-sm border border-border/80 p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium">{scenario.name}</p>
+                          <p className="text-xs text-muted-foreground">{scenario.sacrificePct}% sacrificed</p>
+                        </div>
+                        <span className="text-xs font-mono text-muted-foreground">{formatCurrency(scenario.bonusAmount)}</span>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-muted-foreground">Pension contribution</span>
+                          <span className="font-mono font-medium text-primary">{formatCurrency(scenario.pensionIn)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-muted-foreground">Net cash</span>
+                          <span className="font-mono font-medium">{formatCurrency(scenario.netCash)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-muted-foreground">Tax + NI saved</span>
+                          <span className="font-mono font-medium">{formatCurrency(scenario.totalSaved)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-muted-foreground">Adjusted net income</span>
+                          <span className="font-mono font-medium">{formatCurrency(scenario.adjustedNetIncome)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Childcare Impact Section */}
       {step1.hasChildren && (() => {
