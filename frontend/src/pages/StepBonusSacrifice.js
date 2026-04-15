@@ -9,6 +9,8 @@ import { ArrowLeft, ArrowRight, AlertTriangle, Lightbulb, PiggyBank, Banknote, S
 import { calculateBonusTaxation } from '@/lib/taxEngine';
 import { formatCurrency, parseSalaryInput } from '@/lib/formatters';
 
+const EMPTY_SCENARIOS = [];
+
 function buildScenarioSnapshot({ name, bonusAmount, sacrificePct, result }) {
   const sacrificed = result.afterSacrifice.pensionIn;
   const cashPortion = bonusAmount - sacrificed;
@@ -40,7 +42,7 @@ export default function StepBonusSacrifice() {
   const salary = parseSalaryInput(step1.grossSalary);
   const bonusAmt = parseSalaryInput(bonus.amount);
   const sacrificeAmt = bonusAmt * ((bonus.sacrificePct || 0) / 100);
-  const savedScenarios = bonus.savedScenarios || [];
+  const savedScenarios = bonus.savedScenarios ?? EMPTY_SCENARIOS;
   const [editingScenarioId, setEditingScenarioId] = useState(null);
   const [editingScenarioName, setEditingScenarioName] = useState('');
 
