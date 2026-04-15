@@ -4,6 +4,7 @@ const PENSION_METHOD_PARAM_MAP = {
   relief: 'relief',
   netpay: 'salary-sacrifice',
 };
+const STEP3_VEHICLE_KEYS = ['pension', 'stocksISA', 'cashISA', 'lisa'];
 
 function decodePensionMethod(value) {
   return value === 'relief' ? 'relief' : 'netpay';
@@ -89,6 +90,18 @@ export function encodeStateToURL(state) {
     if (state.bonus.sacrificePct !== 100) params.set('bonusPct', state.bonus.sacrificePct);
   }
 
+  // Step 3 - Comparison
+  if (state.step3.monthlySaving !== 500) params.set('save', state.step3.monthlySaving);
+  if (state.step3.growthRate !== 5) params.set('growth', state.step3.growthRate);
+  if (state.step3.cashISARate !== 4) params.set('cashRate', state.step3.cashISARate);
+  if (state.step3.horizon !== 20) params.set('horizon', state.step3.horizon);
+  if (state.step3.currentPensionPot) params.set('pensionPot', state.step3.currentPensionPot);
+  if (state.step3.currentISABalance) params.set('isaBal', state.step3.currentISABalance);
+  params.set('vehicles', STEP3_VEHICLE_KEYS.filter((key) => state.step3.vehicles[key]).join(','));
+  STEP3_VEHICLE_KEYS.forEach((key) => {
+    params.set(`split_${key}`, state.step3.splits[key]);
+  });
+
   // Settings
   if (state.taxYear !== '2025/26') params.set('taxYear', state.taxYear);
   if (state.employerNIPassback) params.set('passback', '1');
@@ -152,6 +165,31 @@ export function decodeURLToState(searchString) {
     overrides.bonus.amount = params.get('bonus');
     overrides.bonus.sacrificePct = params.has('bonusPct') ? parseInt(params.get('bonusPct')) || 100 : 100;
   }
+
+  // Step 3 - Comparison
+  overrides.step3 = {};
+  if (params.has('save')) overrides.step3.monthlySaving = parseFloat(params.get('save')) || 500;
+  if (params.has('growth')) overrides.step3.growthRate = parseFloat(params.get('growth')) || 5;
+  if (params.has('cashRate')) overrides.step3.cashISARate = parseFloat(params.get('cashRate')) || 4;
+  if (params.has('horizon')) overrides.step3.horizon = parseInt(params.get('horizon')) || 20;
+  if (params.has('pensionPot')) overrides.step3.currentPensionPot = parseFloat(params.get('pensionPot')) || 0;
+  if (params.has('isaBal')) overrides.step3.currentISABalance = parseFloat(params.get('isaBal')) || 0;
+  if (params.has('vehicles')) {
+    const enabledVehicles = new Set(params.get('vehicles').split(',').filter(Boolean));
+    overrides.step3.vehicles = {
+      pension: enabledVehicles.has('pension'),
+      stocksISA: enabledVehicles.has('stocksISA'),
+      cashISA: enabledVehicles.has('cashISA'),
+      lisa: enabledVehicles.has('lisa'),
+    };
+  }
+  const splitParams = STEP3_VEHICLE_KEYS.reduce((result, key) => {
+    if (params.has(`split_${key}`)) {
+      result[key] = parseInt(params.get(`split_${key}`), 10) || 0;
+    }
+    return result;
+  }, {});
+  if (Object.keys(splitParams).length > 0) overrides.step3.splits = splitParams;
 
   // Settings
   if (params.has('taxYear')) overrides.taxYear = params.get('taxYear');

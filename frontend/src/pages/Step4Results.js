@@ -16,7 +16,7 @@ import {
 import { projectPension, projectISA, projectLISA, estimatePensionDrawdown } from '@/lib/projectionEngine';
 import { generateInsights } from '@/lib/insightsEngine';
 import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
-import { buildShareURL } from '@/lib/urlParams';
+import { encodeStateToURL } from '@/lib/urlParams';
 
 const COLORS = {
   takeHome: '#1E3F20',
@@ -68,28 +68,31 @@ export default function Step4Results() {
   }, [step3, age]);
 
   const [copied, setCopied] = useState(false);
+  const [manualShareURL, setManualShareURL] = useState('');
 
   const handleShare = () => {
-    const url = buildShareURL(state);
+    const encodedState = encodeStateToURL(state);
+    const url = `${window.location.origin}${window.location.pathname}?${encodedState}`;
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(url).then(() => {
+        setManualShareURL('');
         setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      }).catch(() => fallbackCopy(url));
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        setManualShareURL(url);
+        setCopied(false);
+      });
     } else {
-      fallbackCopy(url);
+      setManualShareURL(url);
+      setCopied(false);
     }
   };
 
-  const fallbackCopy = (text) => {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch (e) { window.prompt('Copy this link:', text); }
-    document.body.removeChild(ta);
+  const handleStartOver = () => {
+    setCopied(false);
+    setManualShareURL('');
+    window.history.replaceState({}, '', window.location.pathname);
+    dispatch({ type: 'RESET' });
   };
 
   if (!breakdown) {
@@ -165,27 +168,48 @@ export default function Step4Results() {
             Complete breakdown of your salary sacrifice and savings strategy.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 no-print">
           <Button
             data-testid="btn-share-results"
             variant="outline"
             onClick={handleShare}
-            className="rounded-sm hidden sm:flex items-center gap-2 no-print"
+            className="rounded-sm flex items-center gap-2"
           >
             {copied ? <Check className="w-4 h-4 text-primary" /> : <Link2 className="w-4 h-4" />}
-            {copied ? 'Copied!' : 'Share Results'}
+            {copied ? 'Link copied!' : 'Share my results'}
           </Button>
+          <button
+            type="button"
+            onClick={handleStartOver}
+            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          >
+            Start over
+          </button>
           <Button
             data-testid="btn-print-pdf"
             variant="outline"
             onClick={() => window.print()}
-            className="rounded-sm hidden sm:flex items-center gap-2 no-print"
+            className="rounded-sm hidden sm:flex items-center gap-2"
           >
             <Printer className="w-4 h-4" />
             Export to PDF
           </Button>
         </div>
       </div>
+
+      {manualShareURL && (
+        <div className="no-print">
+          <label className="block text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground mb-2">
+            Copy this link
+          </label>
+          <input
+            readOnly
+            value={manualShareURL}
+            onFocus={(e) => e.target.select()}
+            className="w-full rounded-sm border border-border bg-card px-3 py-2 font-mono text-xs text-foreground"
+          />
+        </div>
+      )}
 
       {/* Quick Toggles */}
       <div className="flex flex-wrap gap-4 items-center no-print">
@@ -549,7 +573,7 @@ export default function Step4Results() {
             className="rounded-sm px-6 py-6 text-sm"
           >
             {copied ? <Check className="w-4 h-4 mr-2 text-primary" /> : <Link2 className="w-4 h-4 mr-2" />}
-            {copied ? 'Copied!' : 'Share'}
+            {copied ? 'Link copied!' : 'Share my results'}
           </Button>
           <Button
             data-testid="btn-print-pdf-bottom"
