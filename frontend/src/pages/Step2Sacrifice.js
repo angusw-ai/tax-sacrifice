@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, PiggyBank, Car, Bike, Baby, Laptop, HeartPulse, Info, AlertTriangle, Gift } from 'lucide-react';
-import { getMarginalTaxRate, getMarginalNIRate, getChildcareVoucherCap, calculateTotalSacrifice, checkStatutoryPayRisk, getConstants } from '@/lib/taxEngine';
+import { getMarginalTaxRate, getMarginalNIRate, getChildcareVoucherCap, calculateFullBreakdown, calculateTotalSacrifice, calculatePensionContribution, checkStatutoryPayRisk, getConstants } from '@/lib/taxEngine';
 import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
 
 export default function Step2Sacrifice() {
@@ -27,10 +27,15 @@ export default function Step2Sacrifice() {
 
   const totals = useMemo(() => {
     const { totalAnnual } = calculateTotalSacrifice(salary, step2);
-    const estTaxSaved = totalAnnual * marginalTax;
-    const estNISaved = totalAnnual * marginalNI;
+    const breakdown = salary > 0
+      ? calculateFullBreakdown(salary, region, state.step1.studentLoan, step2, parseFloat(state.step1.employerPensionPct) || 0, taxYear)
+      : null;
+    const estTaxSaved = breakdown ? breakdown.savings.taxSaved : 0;
+    const estNISaved = breakdown ? breakdown.savings.niSaved : 0;
     return { totalAnnual, estTaxSaved, estNISaved, totalSaved: estTaxSaved + estNISaved };
-  }, [salary, step2, marginalTax, marginalNI]);
+  }, [salary, step2, region, state.step1.studentLoan, state.step1.employerPensionPct, taxYear]);
+
+  const pensionPreview = useMemo(() => calculatePensionContribution(salary, step2.pension), [salary, step2.pension]);
 
   return (
     <div className="space-y-8">
@@ -64,7 +69,9 @@ export default function Step2Sacrifice() {
         <SchemeCard
           icon={PiggyBank}
           title="Pension Contributions"
-          description="Reduce gross salary — save income tax and NI"
+          description={step2.pension.method === 'relief'
+            ? 'Paid from net pay with 20% basic-rate relief added to your pension'
+            : 'Reduces gross salary before tax and NI'}
           testId="toggle-pension"
           enabled={step2.pension.enabled}
           onToggle={(v) => updateScheme('pension', { enabled: v })}
@@ -106,18 +113,18 @@ export default function Step2Sacrifice() {
             )}
           </div>
           <div className="mt-3">
-            <Label className="text-xs text-muted-foreground mb-1 block">Arrangement Type</Label>
+            <Label className="text-xs text-muted-foreground mb-1 block">Pension Contribution Method</Label>
             <Select value={step2.pension.method} onValueChange={(v) => updateScheme('pension', { method: v })}>
               <SelectTrigger data-testid="select-pension-method" className="rounded-sm h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="netpay">Net Pay Arrangement (salary sacrifice)</SelectItem>
-                <SelectItem value="relief">Relief at Source</SelectItem>
+                <SelectItem value="netpay">Net Pay / Salary Sacrifice</SelectItem>
+                <SelectItem value="relief">Relief at Source (+20% basic-rate relief)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <SavingsNote salary={salary} annual={step2.pension.inputType === 'percentage' ? salary * (step2.pension.value / 100) : step2.pension.value * 12} marginalTax={marginalTax} marginalNI={marginalNI} />
+          <SavingsNote pension={pensionPreview} marginalTax={marginalTax} marginalNI={marginalNI} />
         </SchemeCard>
 
         {/* EV Lease */}
@@ -379,15 +386,28 @@ function SchemeCard({ icon: Icon, title, description, testId, enabled, onToggle,
   );
 }
 
-function SavingsNote({ salary, annual, marginalTax, marginalNI }) {
-  if (!annual || annual <= 0) return null;
-  const taxSaved = annual * marginalTax;
-  const niSaved = annual * marginalNI;
-  const effectiveCost = annual - taxSaved - niSaved;
+function SavingsNote({ pension, marginalTax, marginalNI }) {
+  if (!pension?.inputAmount || pension.inputAmount <= 0) return null;
+
+  if (pension.method === 'relief') {
+    return (
+      <div className="mt-3 p-3 bg-primary/[0.04] rounded-sm border border-primary/10">
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs">
+          <span className="text-muted-foreground">Your payment: <span className="font-mono font-medium text-foreground">{formatCurrency(pension.netContribution)}</span></span>
+          <span className="text-muted-foreground">Tax relief added: <span className="font-mono font-medium text-primary">{formatCurrency(pension.taxReliefAtSource)}</span></span>
+          <span className="text-muted-foreground">Total into pension: <span className="font-mono font-medium text-primary">{formatCurrency(pension.grossContribution)}</span></span>
+        </div>
+      </div>
+    );
+  }
+
+  const taxSaved = pension.salaryReduction * marginalTax;
+  const niSaved = pension.salaryReduction * marginalNI;
+  const effectiveCost = pension.salaryReduction - taxSaved - niSaved;
   return (
     <div className="mt-3 p-3 bg-primary/[0.04] rounded-sm border border-primary/10">
       <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs">
-        <span className="text-muted-foreground">Annual: <span className="font-mono font-medium text-foreground">{formatCurrency(annual)}</span></span>
+        <span className="text-muted-foreground">Salary sacrifice: <span className="font-mono font-medium text-foreground">{formatCurrency(pension.salaryReduction)}</span></span>
         <span className="text-muted-foreground">Tax relief: <span className="font-mono font-medium text-primary">{formatCurrency(taxSaved)}</span></span>
         <span className="text-muted-foreground">NI saved: <span className="font-mono font-medium text-primary">{formatCurrency(niSaved)}</span></span>
         <span className="text-muted-foreground">Effective cost: <span className="font-mono font-medium text-foreground">{formatCurrency(effectiveCost)}</span></span>

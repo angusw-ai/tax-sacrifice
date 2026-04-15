@@ -149,6 +149,10 @@ export default function Step4Results() {
   const totalProjected = projChartData.length > 0 ? projChartData[projChartData.length - 1].Combined : 0;
   const marginalTax = getMarginalTaxRate(salary, region, taxYear);
   const marginalNI = getMarginalNIRate(salary, taxYear);
+  const pensionMethodLabel = pensionData.method === 'relief' ? 'Relief at Source' : 'Net Pay / Salary Sacrifice';
+  const effectiveCostPerPound = pensionData.method === 'relief'
+    ? ((pensionData.netContribution / pensionData.employeeContribution) * 100)
+    : ((1 - marginalTax - marginalNI) * 100);
 
   return (
     <div className="space-y-8" id="results-dashboard">
@@ -281,24 +285,36 @@ export default function Step4Results() {
         <Card className="rounded-sm border shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="font-serif text-lg font-medium">Pension Contributions</CardTitle>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">{pensionMethodLabel}</p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Your Contribution</p>
-                <p className="font-mono text-lg font-medium">{formatCurrency(dv(pensionData.employeeContribution, dm))}{dvLabel(dm)}</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                  {pensionData.method === 'relief' ? 'Your Payment' : 'Salary Sacrifice'}
+                </p>
+                <p className="font-mono text-lg font-medium">{formatCurrency(dv(pensionData.netContribution, dm))}{dvLabel(dm)}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Employer Contribution</p>
-                <p className="font-mono text-lg font-medium">{formatCurrency(dv(pensionData.employerContribution, dm))}{dvLabel(dm)}</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                  {pensionData.method === 'relief' ? 'Tax Relief Added' : 'Employer Contribution'}
+                </p>
+                <p className="font-mono text-lg font-medium">
+                  {formatCurrency(dv(pensionData.method === 'relief' ? pensionData.taxReliefAtSource : pensionData.employerContribution, dm))}{dvLabel(dm)}
+                </p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Total into Pension</p>
                 <p data-testid="result-total-pension" className="font-mono text-lg font-medium text-primary">{formatCurrency(dv(pensionData.totalContribution, dm))}{dvLabel(dm)}</p>
               </div>
             </div>
+            {pensionData.method === 'relief' && pensionData.employerContribution > 0 && (
+              <p className="text-xs text-muted-foreground mt-3">
+                Separate employer pension contribution: <span className="font-mono font-medium">{formatCurrency(dv(pensionData.employerContribution, dm))}{dvLabel(dm)}</span>
+              </p>
+            )}
             <p className="text-xs text-muted-foreground mt-3">
-              Effective cost per £1 into pension: <span className="font-mono font-medium">{((1 - marginalTax - marginalNI) * 100).toFixed(0)}p</span>
+              Effective cost per £1 into pension: <span className="font-mono font-medium">{effectiveCostPerPound.toFixed(0)}p</span>
             </p>
             {state.employerNIPassback && savings.employerNISaved > 0 && (
               <div className="mt-3 p-3 bg-brass/5 border border-brass/20 rounded-sm">

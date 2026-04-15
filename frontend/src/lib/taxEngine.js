@@ -200,17 +200,52 @@ export function getChildcareVoucherCap(income, region) {
   return 243; // Basic rate
 }
 
+export function calculatePensionContribution(salary, pensionScheme) {
+  if (!pensionScheme?.enabled) {
+    return {
+      method: 'netpay',
+      inputAmount: 0,
+      salaryReduction: 0,
+      netContribution: 0,
+      taxReliefAtSource: 0,
+      grossContribution: 0,
+    };
+  }
+
+  const inputAmount = pensionScheme.inputType === 'percentage'
+    ? salary * ((pensionScheme.value || 0) / 100)
+    : (pensionScheme.value || 0) * 12;
+
+  if (pensionScheme.method === 'relief') {
+    const taxReliefAtSource = inputAmount * 0.25;
+    return {
+      method: 'relief',
+      inputAmount,
+      salaryReduction: 0,
+      netContribution: inputAmount,
+      taxReliefAtSource,
+      grossContribution: inputAmount + taxReliefAtSource,
+    };
+  }
+
+  return {
+    method: 'netpay',
+    inputAmount,
+    salaryReduction: inputAmount,
+    netContribution: inputAmount,
+    taxReliefAtSource: 0,
+    grossContribution: inputAmount,
+  };
+}
+
 export function calculateTotalSacrifice(salary, schemes) {
   let totalAnnual = 0;
   let bikValue = 0;
   const details = {};
 
   if (schemes.pension?.enabled) {
-    const annual = schemes.pension.inputType === 'percentage'
-      ? salary * ((schemes.pension.value || 0) / 100)
-      : (schemes.pension.value || 0) * 12;
-    details.pension = annual;
-    totalAnnual += annual;
+    details.pension = calculatePensionContribution(salary, schemes.pension);
+    totalAnnual += details.pension.salaryReduction;
   }
 
   if (schemes.ev?.enabled) {
@@ -248,6 +283,7 @@ export function calculateTotalSacrifice(salary, schemes) {
 
 export function calculateFullBreakdown(salary, region, studentLoan, schemes, employerPensionPct = 0, taxYear) {
   const { totalAnnual, bikValue, details } = calculateTotalSacrifice(salary, schemes);
+  const pensionDetails = details.pension || calculatePensionContribution(salary, schemes.pension);
 
   // Before sacrifice
   const beforeTax = calculateIncomeTax(salary, region, taxYear);
@@ -263,7 +299,8 @@ export function calculateFullBreakdown(salary, region, studentLoan, schemes, emp
   const afterNI = calculateEmployeeNI(adjustedSalary, taxYear);
   const afterEmployerNI = calculateEmployerNI(adjustedSalary, taxYear);
   const afterStudentLoan = calculateStudentLoan(adjustedSalary, studentLoan, taxYear);
-  const afterTakeHome = adjustedSalary - afterTax.totalTax - afterNI - afterStudentLoan;
+  const postTaxDeductions = pensionDetails.method === 'relief' ? pensionDetails.netContribution : 0;
+  const afterTakeHome = adjustedSalary - afterTax.totalTax - afterNI - afterStudentLoan - postTaxDeductions;
 
   const employerPension = salary * (employerPensionPct / 100);
   const employerNISaved = beforeEmployerNI - afterEmployerNI;
@@ -299,9 +336,13 @@ export function calculateFullBreakdown(salary, region, studentLoan, schemes, emp
       employerNISaved,
     },
     pension: {
-      employeeContribution: details.pension || 0,
+      method: pensionDetails.method,
+      salarySacrificeContribution: pensionDetails.salaryReduction,
+      netContribution: pensionDetails.netContribution,
+      taxReliefAtSource: pensionDetails.taxReliefAtSource,
+      employeeContribution: pensionDetails.grossContribution,
       employerContribution: employerPension,
-      totalContribution: (details.pension || 0) + employerPension,
+      totalContribution: pensionDetails.grossContribution + employerPension,
     },
     sacrificeDetails: details,
   };
