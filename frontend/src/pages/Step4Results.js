@@ -156,6 +156,8 @@ export default function Step4Results() {
   const effectiveCostPerPound = pensionData.method === 'relief'
     ? ((pensionData.netContribution / pensionData.employeeContribution) * 100)
     : ((1 - marginalTax - marginalNI) * 100);
+  const takeHomeReduction = before.takeHome - after.takeHome;
+  const netBenefit = savings.totalSaved - takeHomeReduction;
 
   return (
     <div className="space-y-8" id="results-dashboard">
@@ -253,6 +255,9 @@ export default function Step4Results() {
           <CardTitle className="font-serif text-lg font-medium">Before & After Salary Sacrifice</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
+          <div className="mx-6 mt-6 rounded-sm border border-primary/10 bg-primary/[0.04] px-4 py-3 text-sm text-muted-foreground">
+            Your cash take-home reduces by the sacrifice amount minus tax saved. The net benefit accounts for what goes into your pension.
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm" data-testid="before-after-table">
               <thead>
@@ -274,6 +279,14 @@ export default function Step4Results() {
                   <TableRow label="Student Loan" before={-before.studentLoan} after={-after.studentLoan} dm={dm} />
                 )}
                 <TableRow label={`Take-Home Pay ${dvLabel(dm)}`} before={dv(before.takeHome, dm)} after={dv(after.takeHome, dm)} bold accent dm="annual" />
+                <TableRow
+                  label={`Net Benefit ${dvLabel(dm)}`}
+                  before={0}
+                  after={dv(netBenefit, dm)}
+                  bold
+                  accent
+                  dm="annual"
+                />
               </tbody>
             </table>
           </div>
@@ -456,7 +469,7 @@ export default function Step4Results() {
             </div>
             <div>
               <span className="text-muted-foreground">Take-home reduction</span>
-              <p className="font-mono text-lg font-medium mt-1">{formatCurrency(dv(before.takeHome - after.takeHome, dm))}{dvLabel(dm)}</p>
+              <p className="font-mono text-lg font-medium mt-1">{formatCurrency(dv(takeHomeReduction, dm))}{dvLabel(dm)}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Employer NI saved (potential pass-back)</span>
