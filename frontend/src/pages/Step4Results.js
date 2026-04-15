@@ -3,7 +3,7 @@ import { useWizard } from '@/context/WizardContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Printer, AlertTriangle, Lightbulb, CheckCircle2, Info, TrendingUp, Home, Baby, Link2, Check } from 'lucide-react';
+import { ArrowLeft, Printer, AlertTriangle, Lightbulb, CheckCircle2, Info, TrendingUp, Home, Baby, Link2, Check, Coffee } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
@@ -554,6 +554,27 @@ export default function Step4Results() {
           </Card>
         );
       })()}
+
+      <div className="border-t border-border pt-6">
+        <div className="rounded-sm border border-border/70 bg-card/60 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <Coffee className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+            <div className="text-sm">
+              <p className="text-foreground">
+                If this tool saved you money, you can support its development.
+              </p>
+              <a
+                href="https://buymeacoffee.com/angusw"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex mt-2 text-sm font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                Buy me a coffee
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Navigation */}
       <div className="flex justify-between pt-4 no-print">

@@ -1,6 +1,6 @@
 import { useWizard } from '@/context/WizardContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+import { Coffee } from 'lucide-react';
 import { AVAILABLE_TAX_YEARS } from '@/lib/taxEngine';
 import AdjustedNetIncomeBanner from '@/components/AdjustedNetIncomeBanner';
 import Step1Situation from '@/pages/Step1Situation';
@@ -46,6 +46,15 @@ export default function WizardShell() {
                 ))}
               </SelectContent>
             </Select>
+            <a
+              href="https://buymeacoffee.com/angusw"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-border px-2.5 h-8 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground hover:border-primary/30"
+            >
+              <Coffee className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Support</span>
+            </a>
             {/* Monthly / Annual Toggle */}
             <div className="flex items-center rounded-sm border border-border overflow-hidden">
               <button
