@@ -2,6 +2,67 @@ import React, { createContext, useContext, useReducer, useEffect, useRef } from 
 import { decodeURLToState } from '@/lib/urlParams';
 
 const WizardContext = createContext(null);
+const VALID_REGIONS = new Set(['england', 'scotland']);
+const VALID_STUDENT_LOANS = new Set(['none', 'plan1', 'plan2', 'plan4', 'postgrad']);
+const VALID_TAX_YEARS = new Set(['2024/25', '2025/26']);
+const VALID_PENSION_INPUT_TYPES = new Set(['percentage', 'fixed']);
+const VALID_PENSION_METHODS = new Set(['netpay', 'relief']);
+
+function isNonNegativeNumber(value) {
+  return Number.isFinite(value) && value >= 0;
+}
+
+function isIntegerInRange(value, min, max) {
+  return Number.isInteger(value) && value >= min && value <= max;
+}
+
+function isNumericString(value) {
+  return typeof value === 'string' && /^[0-9]+$/.test(value);
+}
+
+function isValidHydratedState(payload, rawSearch = '') {
+  if (!payload?.step1?.grossSalary || !isNumericString(payload.step1.grossSalary) || parseInt(payload.step1.grossSalary, 10) <= 0) {
+    return false;
+  }
+
+  const params = new URLSearchParams(rawSearch);
+
+  if (params.has('salary') && !isNumericString(params.get('salary'))) return false;
+  if (params.has('region') && !VALID_REGIONS.has(params.get('region'))) return false;
+  if (params.has('age') && !isIntegerInRange(parseInt(params.get('age'), 10), 16, 75)) return false;
+  if (params.has('loan') && !VALID_STUDENT_LOANS.has(params.get('loan'))) return false;
+  if (params.has('empPension')) {
+    const employerPensionPct = Number(params.get('empPension'));
+    if (!isNonNegativeNumber(employerPensionPct) || employerPensionPct > 100) return false;
+  }
+
+  if (params.has('children')) {
+    const children = parseInt(params.get('children'), 10);
+    if (!isIntegerInRange(children, 1, 6)) return false;
+  }
+  if (params.has('childCost') && !isNonNegativeNumber(Number(params.get('childCost')))) return false;
+
+  if (params.has('pension') && params.has('pensionFixed')) return false;
+  if (params.has('pension') && (!isNonNegativeNumber(Number(params.get('pension'))) || !VALID_PENSION_INPUT_TYPES.has(payload.step2?.pension?.inputType) || !VALID_PENSION_METHODS.has(payload.step2?.pension?.method))) return false;
+  if (params.has('pensionFixed') && (!isNonNegativeNumber(Number(params.get('pensionFixed'))) || !VALID_PENSION_INPUT_TYPES.has(payload.step2?.pension?.inputType) || !VALID_PENSION_METHODS.has(payload.step2?.pension?.method))) return false;
+  if (params.has('ev') && !isNonNegativeNumber(Number(params.get('ev')))) return false;
+  if (params.has('evPrice') && !isNonNegativeNumber(Number(params.get('evPrice')))) return false;
+  if (params.has('cycle') && !isNonNegativeNumber(Number(params.get('cycle')))) return false;
+  if (params.has('childcareV') && !isNonNegativeNumber(Number(params.get('childcareV')))) return false;
+  if (params.has('tech') && !isNonNegativeNumber(Number(params.get('tech')))) return false;
+  if (params.has('health') && !isNonNegativeNumber(Number(params.get('health')))) return false;
+
+  if (params.has('bonus') && !isNumericString(params.get('bonus'))) return false;
+  if (params.has('bonusPct')) {
+    const sacrificePct = Number(params.get('bonusPct'));
+    if (!isIntegerInRange(sacrificePct, 0, 100)) return false;
+  }
+
+  if (params.has('taxYear') && !VALID_TAX_YEARS.has(params.get('taxYear'))) return false;
+  if (params.has('passback') && params.get('passback') !== '1') return false;
+
+  return true;
+}
 
 const initialState = {
   currentStep: 1,
@@ -96,15 +157,18 @@ function wizardReducer(state, action) {
       };
     case 'HYDRATE': {
       const p = action.payload;
-      const next = { ...state, currentStep: 5 };
-      if (p.step1) next.step1 = { ...state.step1, ...p.step1 };
+      if (!isValidHydratedState(p, action.rawSearch)) {
+        return { ...initialState };
+      }
+      const next = { ...initialState, currentStep: 5 };
+      if (p.step1) next.step1 = { ...initialState.step1, ...p.step1 };
       if (p.step2) {
-        next.step2 = { ...state.step2 };
+        next.step2 = { ...initialState.step2 };
         for (const [k, v] of Object.entries(p.step2)) {
-          next.step2[k] = { ...state.step2[k], ...v };
+          next.step2[k] = { ...initialState.step2[k], ...v };
         }
       }
-      if (p.bonus) next.bonus = { ...state.bonus, ...p.bonus };
+      if (p.bonus) next.bonus = { ...initialState.bonus, ...p.bonus };
       if (p.taxYear) next.taxYear = p.taxYear;
       if (p.employerNIPassback !== undefined) next.employerNIPassback = p.employerNIPassback;
       return next;
@@ -123,7 +187,7 @@ export function WizardProvider({ children }) {
     hydrated.current = true;
     const overrides = decodeURLToState(window.location.search);
     if (overrides) {
-      dispatch({ type: 'HYDRATE', payload: overrides });
+      dispatch({ type: 'HYDRATE', payload: overrides, rawSearch: window.location.search });
       // Clean URL without reloading
       window.history.replaceState({}, '', window.location.pathname);
     }
