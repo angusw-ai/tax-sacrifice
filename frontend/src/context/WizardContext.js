@@ -118,6 +118,7 @@ const initialState = {
   bonus: {
     amount: '',
     sacrificePct: 100,
+    savedScenarios: [],
   },
   step3: {
     monthlySaving: 500,
@@ -153,6 +154,34 @@ function wizardReducer(state, action) {
       return { ...state, step1: { ...state.step1, ...action.payload } };
     case 'UPDATE_BONUS':
       return { ...state, bonus: { ...state.bonus, ...action.payload } };
+    case 'SAVE_BONUS_SCENARIO':
+      return {
+        ...state,
+        bonus: {
+          ...state.bonus,
+          savedScenarios: [...state.bonus.savedScenarios, action.payload],
+        },
+      };
+    case 'RENAME_BONUS_SCENARIO':
+      return {
+        ...state,
+        bonus: {
+          ...state.bonus,
+          savedScenarios: state.bonus.savedScenarios.map((scenario) => (
+            scenario.id === action.payload.id
+              ? { ...scenario, name: action.payload.name }
+              : scenario
+          )),
+        },
+      };
+    case 'CLEAR_BONUS_SCENARIOS':
+      return {
+        ...state,
+        bonus: {
+          ...state.bonus,
+          savedScenarios: [],
+        },
+      };
     case 'UPDATE_STEP2_SCHEME':
       return {
         ...state,
