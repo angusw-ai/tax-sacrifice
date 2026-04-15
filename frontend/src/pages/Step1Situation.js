@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ArrowRight, TrendingUp, Baby } from 'lucide-react';
 import { calculateIncomeTax, calculateEmployeeNI, calculateStudentLoan, getMarginalTaxRate } from '@/lib/taxEngine';
-import { formatCurrency, parseSalaryInput, formatSalaryInput, dv, dvLabel } from '@/lib/formatters';
+import { formatCurrency, parseSalaryInput, formatSalaryInput, normalizeIntegerInput, normalizeFloatInput, dv, dvLabel } from '@/lib/formatters';
 
 export default function Step1Situation() {
   const { state, dispatch } = useWizard();
@@ -60,8 +60,7 @@ export default function Step1Situation() {
                 placeholder="75,000"
                 value={formatSalaryInput(step1.grossSalary)}
                 onChange={(e) => {
-                  const raw = e.target.value.replace(/[^0-9]/g, '');
-                  update('grossSalary', raw || '');
+                  update('grossSalary', normalizeIntegerInput(e.target.value));
                 }}
               />
             </div>
@@ -122,7 +121,7 @@ export default function Step1Situation() {
                 max={75}
                 placeholder="35"
                 value={step1.age}
-                onChange={(e) => update('age', e.target.value)}
+                onChange={(e) => update('age', normalizeIntegerInput(e.target.value))}
               />
             </div>
 
@@ -141,7 +140,7 @@ export default function Step1Situation() {
                   step={0.5}
                   placeholder="3"
                   value={step1.employerPensionPct}
-                  onChange={(e) => update('employerPensionPct', e.target.value)}
+                  onChange={(e) => update('employerPensionPct', normalizeFloatInput(e.target.value))}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">
                   %
@@ -182,7 +181,7 @@ export default function Step1Situation() {
                   min={1}
                   max={6}
                   value={step1.numberOfChildren}
-                  onChange={(e) => update('numberOfChildren', parseInt(e.target.value) || 1)}
+                  onChange={(e) => update('numberOfChildren', normalizeIntegerInput(e.target.value) || 1)}
                 />
               </div>
               <div className="space-y-2">
@@ -209,7 +208,7 @@ export default function Step1Situation() {
                     type="number"
                     min={0}
                     value={step1.monthlyCostPerChild}
-                    onChange={(e) => update('monthlyCostPerChild', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => update('monthlyCostPerChild', normalizeFloatInput(e.target.value) || 0)}
                   />
                 </div>
               </div>

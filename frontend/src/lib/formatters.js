@@ -20,6 +20,28 @@ export function parseSalaryInput(value) {
   return cleaned ? parseInt(cleaned, 10) : 0;
 }
 
+export function normalizeIntegerInput(value) {
+  const digits = String(value).replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+  return digits ? parseInt(digits, 10) : '';
+}
+
+export function normalizeFloatInput(value) {
+  const cleaned = String(value)
+    .replace(/[^0-9.]/g, '')
+    .replace(/(\..*)\./g, '$1');
+
+  if (!cleaned) return '';
+
+  const [integerPart = '', decimalPart] = cleaned.split('.');
+  const normalizedInteger = integerPart.replace(/^0+(?=\d)/, '') || '0';
+  const normalized = decimalPart !== undefined
+    ? `${normalizedInteger}.${decimalPart}`
+    : normalizedInteger;
+  const parsed = parseFloat(normalized);
+
+  return Number.isNaN(parsed) ? '' : parsed;
+}
+
 export function formatSalaryInput(value) {
   if (!value && value !== 0) return '';
   return Number(value).toLocaleString('en-GB');

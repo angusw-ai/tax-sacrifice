@@ -11,7 +11,7 @@ import { ArrowLeft, ArrowRight, TrendingUp, Shield, Banknote, Gift, Layers, Cloc
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getMarginalTaxRate, getMarginalNIRate, TAX_CONSTANTS, calculateCarryForward, calculate2029NImpact, calculateTotalSacrifice, getConstants } from '@/lib/taxEngine';
 import { projectPension, projectISA, projectLISA, estimatePensionDrawdown, getEffectivePensionCost } from '@/lib/projectionEngine';
-import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
+import { formatCurrency, parseSalaryInput, normalizeIntegerInput, normalizeFloatInput, dv, dvLabel } from '@/lib/formatters';
 
 const CHART_COLORS = { pension: '#1E3F20', stocksISA: '#C19D60', cashISA: '#9CA3AF', lisa: '#1E293B', combined: '#6B21A8' };
 
@@ -183,7 +183,7 @@ export default function Step3Comparison() {
                   type="number"
                   min={0}
                   value={step3.monthlySaving}
-                  onChange={(e) => update({ monthlySaving: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => update({ monthlySaving: normalizeFloatInput(e.target.value) || 0 })}
                 />
               </div>
             </div>
@@ -242,7 +242,7 @@ export default function Step3Comparison() {
                   type="number"
                   min={0}
                   value={step3.currentPensionPot}
-                  onChange={(e) => update({ currentPensionPot: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => update({ currentPensionPot: normalizeFloatInput(e.target.value) || 0 })}
                 />
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function Step3Comparison() {
                   type="number"
                   min={0}
                   value={step3.currentISABalance}
-                  onChange={(e) => update({ currentISABalance: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => update({ currentISABalance: normalizeFloatInput(e.target.value) || 0 })}
                 />
               </div>
             </div>
@@ -462,7 +462,7 @@ export default function Step3Comparison() {
                       type="number"
                       min={0}
                       value={step3[key]}
-                      onChange={(e) => update({ [key]: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => update({ [key]: normalizeFloatInput(e.target.value) || 0 })}
                     />
                   </div>
                 </div>
@@ -578,7 +578,7 @@ function VehicleToggle({ icon: Icon, label, testId, active, onToggle, splitPct, 
             min={0}
             max={100}
             value={splitPct}
-            onChange={(e) => onSplitChange(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+            onChange={(e) => onSplitChange(Math.min(100, Math.max(0, normalizeIntegerInput(e.target.value) || 0)))}
           />
           <span className="text-xs text-muted-foreground">%</span>
         </div>

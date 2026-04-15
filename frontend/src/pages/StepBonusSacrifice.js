@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ArrowLeft, ArrowRight, AlertTriangle, Lightbulb, PiggyBank, Banknote, Save, Star } from 'lucide-react';
 import { calculateBonusTaxation } from '@/lib/taxEngine';
-import { formatCurrency, parseSalaryInput } from '@/lib/formatters';
+import { formatCurrency, parseSalaryInput, normalizeIntegerInput } from '@/lib/formatters';
 
 const EMPTY_SCENARIOS = [];
 
@@ -120,8 +120,7 @@ export default function StepBonusSacrifice() {
                 placeholder="25,000"
                 value={bonus.amount ? Number(bonus.amount).toLocaleString('en-GB') : ''}
                 onChange={(e) => {
-                  const raw = e.target.value.replace(/[^0-9]/g, '');
-                  updateBonus({ amount: raw || '' });
+                  updateBonus({ amount: normalizeIntegerInput(e.target.value) });
                 }}
               />
             </div>

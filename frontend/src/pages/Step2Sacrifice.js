@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, PiggyBank, Car, Bike, Baby, Laptop, HeartPulse, Info, AlertTriangle, Gift } from 'lucide-react';
 import { getMarginalTaxRate, getMarginalNIRate, getChildcareVoucherCap, calculateFullBreakdown, calculateTotalSacrifice, calculatePensionContribution, checkStatutoryPayRisk, getConstants } from '@/lib/taxEngine';
-import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters';
+import { formatCurrency, parseSalaryInput, normalizeFloatInput, dv, dvLabel } from '@/lib/formatters';
 
 export default function Step2Sacrifice() {
   const { state, dispatch } = useWizard();
@@ -106,7 +106,7 @@ export default function Step2Sacrifice() {
               type="number"
               min={0}
               value={step2.pension.value}
-              onChange={(e) => updateScheme('pension', { value: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => updateScheme('pension', { value: normalizeFloatInput(e.target.value) || 0 })}
             />
             {step2.pension.inputType === 'percentage' && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">%</span>
@@ -147,7 +147,7 @@ export default function Step2Sacrifice() {
                   type="number"
                   min={0}
                   value={step2.ev.monthlyCost}
-                  onChange={(e) => updateScheme('ev', { monthlyCost: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => updateScheme('ev', { monthlyCost: normalizeFloatInput(e.target.value) || 0 })}
                 />
               </div>
             </div>
@@ -161,7 +161,7 @@ export default function Step2Sacrifice() {
                   type="number"
                   min={0}
                   value={step2.ev.listPrice}
-                  onChange={(e) => updateScheme('ev', { listPrice: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => updateScheme('ev', { listPrice: normalizeFloatInput(e.target.value) || 0 })}
                 />
               </div>
             </div>
@@ -192,7 +192,7 @@ export default function Step2Sacrifice() {
                   min={0}
                   max={step2.cycle.cap}
                   value={step2.cycle.value}
-                  onChange={(e) => updateScheme('cycle', { value: Math.min(parseFloat(e.target.value) || 0, step2.cycle.cap) })}
+                  onChange={(e) => updateScheme('cycle', { value: Math.min(normalizeFloatInput(e.target.value) || 0, step2.cycle.cap) })}
                 />
               </div>
             </div>
@@ -232,7 +232,7 @@ export default function Step2Sacrifice() {
                 min={0}
                 max={childcareCap}
                 value={step2.childcare.monthlyAmount}
-                onChange={(e) => updateScheme('childcare', { monthlyAmount: Math.min(parseFloat(e.target.value) || 0, childcareCap) })}
+                onChange={(e) => updateScheme('childcare', { monthlyAmount: Math.min(normalizeFloatInput(e.target.value) || 0, childcareCap) })}
               />
             </div>
           </div>
@@ -261,7 +261,7 @@ export default function Step2Sacrifice() {
                 min={0}
                 max={3000}
                 value={step2.tech.value}
-                onChange={(e) => updateScheme('tech', { value: Math.min(parseFloat(e.target.value) || 0, 3000) })}
+                onChange={(e) => updateScheme('tech', { value: Math.min(normalizeFloatInput(e.target.value) || 0, 3000) })}
               />
             </div>
           </div>
@@ -287,7 +287,7 @@ export default function Step2Sacrifice() {
                 type="number"
                 min={0}
                 value={step2.healthcare.monthlyPremium}
-                onChange={(e) => updateScheme('healthcare', { monthlyPremium: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => updateScheme('healthcare', { monthlyPremium: normalizeFloatInput(e.target.value) || 0 })}
               />
             </div>
           </div>
