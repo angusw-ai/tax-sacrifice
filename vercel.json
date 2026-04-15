@@ -3,5 +3,6 @@
     "env": {
       "NODE_VERSION": "20"
     }
-  }
+  },
+  "installCommand": "npm install --legacy-peer-deps && npm install ajv@^6.12.6 --legacy-peer-deps"
 }
