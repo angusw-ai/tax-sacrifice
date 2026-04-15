@@ -15,6 +15,46 @@ import { formatCurrency, parseSalaryInput, dv, dvLabel } from '@/lib/formatters'
 
 const CHART_COLORS = { pension: '#1E3F20', stocksISA: '#C19D60', cashISA: '#9CA3AF', lisa: '#1E293B', combined: '#6B21A8' };
 
+function distributeTotal(total, keys, weights = {}) {
+  if (keys.length === 0) return {};
+
+  const safeTotal = Math.max(0, total);
+  const totalWeight = keys.reduce((sum, key) => sum + Math.max(0, weights[key] || 0), 0);
+
+  if (totalWeight <= 0) {
+    const base = Math.floor(safeTotal / keys.length);
+    let remainder = safeTotal - (base * keys.length);
+    return keys.reduce((result, key) => {
+      result[key] = base + (remainder > 0 ? 1 : 0);
+      remainder = Math.max(0, remainder - 1);
+      return result;
+    }, {});
+  }
+
+  const rawShares = keys.map((key) => ({
+    key,
+    raw: (safeTotal * Math.max(0, weights[key] || 0)) / totalWeight,
+  }));
+  const shares = {};
+  let assigned = 0;
+
+  for (const { key, raw } of rawShares) {
+    shares[key] = Math.floor(raw);
+    assigned += shares[key];
+  }
+
+  let remainder = safeTotal - assigned;
+  rawShares
+    .sort((a, b) => (b.raw - Math.floor(b.raw)) - (a.raw - Math.floor(a.raw)))
+    .forEach(({ key }) => {
+      if (remainder <= 0) return;
+      shares[key] += 1;
+      remainder -= 1;
+    });
+
+  return shares;
+}
+
 export default function Step3Comparison() {
   const { state, dispatch } = useWizard();
   const { step3, step1, taxYear, displayMode } = state;
@@ -27,12 +67,46 @@ export default function Step3Comparison() {
   const showLISA = age >= 18 && age <= 39;
 
   const update = (payload) => dispatch({ type: 'UPDATE_STEP3', payload });
-  const toggleVehicle = (payload) => dispatch({ type: 'UPDATE_STEP3_VEHICLES', payload });
   const updateSplit = (payload) => dispatch({ type: 'UPDATE_STEP3_SPLITS', payload });
+  const vehicleKeys = ['pension', 'stocksISA', 'cashISA', ...(showLISA ? ['lisa'] : [])];
+
+  const toggleVehicle = (vehicleKey, enabled) => {
+    const nextVehicles = {
+      ...step3.vehicles,
+      [vehicleKey]: enabled,
+      ...(showLISA ? {} : { lisa: false }),
+    };
+
+    let activeKeys = vehicleKeys.filter((key) => nextVehicles[key]);
+    if (activeKeys.length === 0) {
+      nextVehicles[vehicleKey] = true;
+      activeKeys = [vehicleKey];
+    }
+
+    let nextSplits = Object.fromEntries(vehicleKeys.map((key) => [key, 0]));
+
+    if (enabled) {
+      const existingKeys = activeKeys.filter((key) => key !== vehicleKey);
+      const newVehicleShare = existingKeys.length === 0 ? 100 : Math.round(100 / activeKeys.length);
+      const redistributed = distributeTotal(100 - newVehicleShare, existingKeys, step3.splits);
+      nextSplits = {
+        ...nextSplits,
+        ...redistributed,
+        [vehicleKey]: existingKeys.length === 0 ? 100 : newVehicleShare,
+      };
+    } else {
+      const redistributed = distributeTotal(100, activeKeys, step3.splits);
+      nextSplits = { ...nextSplits, ...redistributed };
+    }
+
+    dispatch({ type: 'UPDATE_STEP3_VEHICLES', payload: nextVehicles });
+    dispatch({ type: 'UPDATE_STEP3_SPLITS', payload: nextSplits });
+  };
 
   // Auto-balance splits when toggling vehicles
   const activeVehicles = Object.entries(step3.vehicles).filter(([k, v]) => v && (k !== 'lisa' || showLISA));
   const activeCount = activeVehicles.length;
+  const allocationTotal = activeVehicles.reduce((sum, [key]) => sum + (step3.splits[key] || 0), 0);
 
   const projections = useMemo(() => {
     const results = {};
@@ -198,7 +272,7 @@ export default function Step3Comparison() {
             label="Pension (Salary Sacrifice)"
             testId="toggle-vehicle-pension"
             active={step3.vehicles.pension}
-            onToggle={(v) => toggleVehicle({ pension: v })}
+            onToggle={(v) => toggleVehicle('pension', v)}
             splitPct={step3.splits.pension}
             onSplitChange={(v) => updateSplit({ pension: v })}
             color={CHART_COLORS.pension}
@@ -209,7 +283,7 @@ export default function Step3Comparison() {
             label="Stocks & Shares ISA"
             testId="toggle-vehicle-stocks-isa"
             active={step3.vehicles.stocksISA}
-            onToggle={(v) => toggleVehicle({ stocksISA: v })}
+            onToggle={(v) => toggleVehicle('stocksISA', v)}
             splitPct={step3.splits.stocksISA}
             onSplitChange={(v) => updateSplit({ stocksISA: v })}
             color={CHART_COLORS.stocksISA}
@@ -220,7 +294,7 @@ export default function Step3Comparison() {
             label="Cash ISA"
             testId="toggle-vehicle-cash-isa"
             active={step3.vehicles.cashISA}
-            onToggle={(v) => toggleVehicle({ cashISA: v })}
+            onToggle={(v) => toggleVehicle('cashISA', v)}
             splitPct={step3.splits.cashISA}
             onSplitChange={(v) => updateSplit({ cashISA: v })}
             color={CHART_COLORS.cashISA}
@@ -232,7 +306,7 @@ export default function Step3Comparison() {
               label="Lifetime ISA"
               testId="toggle-vehicle-lisa"
               active={step3.vehicles.lisa}
-              onToggle={(v) => toggleVehicle({ lisa: v })}
+              onToggle={(v) => toggleVehicle('lisa', v)}
               splitPct={step3.splits.lisa}
               onSplitChange={(v) => updateSplit({ lisa: v })}
               color={CHART_COLORS.lisa}
@@ -242,8 +316,8 @@ export default function Step3Comparison() {
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Allocation total: {Object.entries(step3.splits).filter(([k]) => step3.vehicles[k]).reduce((s, [, v]) => s + v, 0)}%
-          {Object.entries(step3.splits).filter(([k]) => step3.vehicles[k]).reduce((s, [, v]) => s + v, 0) !== 100 &&
+          Allocation total: {allocationTotal}%
+          {allocationTotal !== 100 &&
             <span className="text-amber-600 ml-1">(should total 100%)</span>
           }
         </p>
