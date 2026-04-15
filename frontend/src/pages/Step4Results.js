@@ -158,6 +158,8 @@ export default function Step4Results() {
     : ((1 - marginalTax - marginalNI) * 100);
   const takeHomeReduction = before.takeHome - after.takeHome;
   const netBenefit = savings.totalSaved - takeHomeReduction;
+  const taxAndNISaved = savings.taxSaved + savings.niSaved;
+  const netCostOfSacrifice = after.totalSacrifice - taxAndNISaved;
 
   return (
     <div className="space-y-8" id="results-dashboard">
@@ -287,6 +289,23 @@ export default function Step4Results() {
                   accent
                   dm="annual"
                 />
+                <tr className="bg-primary/5 border-y border-primary/15">
+                  <td className="p-4 font-medium text-primary">Net Cost of Sacrifice</td>
+                  <td className="p-4 text-right font-mono text-sm text-primary font-medium">
+                    {formatCurrency(after.totalSacrifice)}
+                  </td>
+                  <td className="p-4 text-right font-mono text-sm text-primary font-medium">
+                    {formatCurrency(taxAndNISaved)}
+                  </td>
+                  <td className="p-4 text-right font-mono text-sm text-primary font-semibold">
+                    {formatCurrency(netCostOfSacrifice)}
+                  </td>
+                </tr>
+                <tr className="border-b border-primary/15 bg-primary/[0.03]">
+                  <td colSpan={4} className="px-4 pb-4 pt-0 text-sm text-primary/90">
+                    You put {formatCurrency(after.totalSacrifice)} into your pension for a net cost of {formatCurrency(netCostOfSacrifice)} — the rest is recovered through tax and NI savings.
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
